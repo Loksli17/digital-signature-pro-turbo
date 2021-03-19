@@ -43,16 +43,3 @@ LIBS += -LD:\opencv\opencv-build\install\x64\mingw\lib \
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
-
-
-=======
-OPENCV_SDK_DIR=D:/opencv-build/install
-INCLUDEPATH += $$(OPENCV_SDK_DIR)/include
-
-LIBS += -L$$(OPENCV_SDK_DIR)/x86/mingw/lib \
-        -lopencv_core451        \
-        -lopencv_highgui451     \
-        -lopencv_imgcodecs451   \
-        -lopencv_imgproc451     \
-        -lopencv_features2d451  \
-        -lopencv_calib3d451

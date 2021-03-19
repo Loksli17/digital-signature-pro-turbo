@@ -38,22 +38,16 @@ void MainWindow::on_loadImage_clicked()
     QString     fileName = lst[lst.count() - 1];
 
     // it just works
-    Mat image = imread("D:\\repos\\digital-signature-pro-turbo\\test.jpg", IMREAD_COLOR);
+    Mat image = imread(fileName.toUtf8().toStdString(), IMREAD_COLOR);
     QImage img = QImage((uchar*)image.data, image.cols, image.rows, image.step, QImage::Format_RGB888);
-
+    qDebug() << fileName;
 
     if(this->imagePath != ""){
-<<<<<<< Updated upstream
         this->imagePixels = QPixmap::fromImage(img);
 //        this->imagePixels.load(this->imagePath);
         ui->imageWrap->setPixmap(this->imagePixels);
         QMessageBox::information(this, "Success", "File: " + fileName + " was opened");
-=======
-        this->image.load(this->imagePath);
-        ui->imageWrap->setPixmap(this->image);
-
         QMessageBox::QMessageBox::information(this, "Success", "File: " + fileName + " was opened");
->>>>>>> Stashed changes
     }else{
         QMessageBox::warning(this, "Error", "File wasn't opened");
         return;

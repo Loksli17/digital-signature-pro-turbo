@@ -18,7 +18,30 @@ HEADERS += \
 FORMS += \
     mainwindow.ui
 
+
+
+INCLUDEPATH += D:\opencv\build\include
+
+#@LIBS += LD:\opencv\opencv-build\install\x64\mingw\lib -lopencv_core451 -lopencv_highgui451 -lopencv_imgcodec451 -lopencv_imgproc451 -lopencv_features2d451 -lopencv_calib3d451
+
+#LIBS += D:\opencv\opencv-build\bin\libopencv_core451.dll
+#LIBS += D:\opencv\opencv-build\bin\libopencv_highgui451.dll
+#LIBS += D:\opencv\opencv-build\bin\libopencv_imgcodecs451.dll
+#LIBS += D:\opencv\opencv-build\bin\libopencv_imgproc451.dll
+#LIBS += D:\opencv\opencv-build\bin\libopencv_features2d451.dll
+#LIBS += D:\opencv\opencv-build\bin\libopencv_calib3d451.dll
+
+LIBS += -LD:\opencv\opencv-build\install\x64\mingw\lib \
+        -lopencv_core451        \
+        -lopencv_highgui451     \
+        -lopencv_imgcodecs451   \
+        -lopencv_imgproc451     \
+        -lopencv_features2d451  \
+        -lopencv_calib3d451
+
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+

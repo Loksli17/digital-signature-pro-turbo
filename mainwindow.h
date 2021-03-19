@@ -24,6 +24,6 @@ private:
     Ui::MainWindow *ui;
 
     QString imagePath;
-    QPixmap image;
+    QPixmap imagePixels;
 };
 #endif // MAINWINDOW_H

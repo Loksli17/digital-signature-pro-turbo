@@ -27,12 +27,13 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_loadImage_clicked()
 {
+
+    //TODO вынести код потом отдельно, потому что он будет выполняться с других мест
     ui->imageWrap->clear();
 
     this->imagePath = QFileDialog::getOpenFileName(nullptr, "Choose image", "C:/desktop", "*.jpg");
-    QFile file(this->imagePath);
 
-
+    QFile       file(this->imagePath);
     QStringList lst      = this->imagePath.split('/');
     QString     fileName = lst[lst.count() - 1];
 
@@ -42,10 +43,17 @@ void MainWindow::on_loadImage_clicked()
 
 
     if(this->imagePath != ""){
+<<<<<<< Updated upstream
         this->imagePixels = QPixmap::fromImage(img);
 //        this->imagePixels.load(this->imagePath);
         ui->imageWrap->setPixmap(this->imagePixels);
         QMessageBox::information(this, "Success", "File: " + fileName + " was opened");
+=======
+        this->image.load(this->imagePath);
+        ui->imageWrap->setPixmap(this->image);
+
+        QMessageBox::QMessageBox::information(this, "Success", "File: " + fileName + " was opened");
+>>>>>>> Stashed changes
     }else{
         QMessageBox::warning(this, "Error", "File wasn't opened");
         return;

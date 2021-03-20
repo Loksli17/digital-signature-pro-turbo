@@ -5,6 +5,10 @@
 #include <QFileDialog>
 #include <QImage>
 
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -25,5 +29,7 @@ private:
 
     QString imagePath;
     QPixmap imagePixels;
+
+    cv::Mat mat;
 };
 #endif // MAINWINDOW_H

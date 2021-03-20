@@ -149,7 +149,7 @@ void MainWindow::on_authorAlgorithm_clicked()
     double elapsedTime;
     QueryPerformanceFrequency(&frequency);
     QueryPerformanceCounter(&t1);
-    L1 = WaveletDec();
+    L1 = WaveletDec(image);
     int N1 = L1[0].rows / N;
     int N2 = L1[0].cols / N;
     if (8 * text.size() > N1*N2)
@@ -279,7 +279,7 @@ void MainWindow::on_authorAlgorithm_clicked()
     QueryPerformanceFrequency(&frequency);
     QueryPerformanceCounter(&t1);
     vector <cv::Mat> LI1;
-    LI1 = WaveletDec();
+    LI1 = WaveletDec(imr);
     //извлечение ЦВЗ
     for (int i = 0; i < length; i++)
     {
@@ -374,14 +374,270 @@ void MainWindow::on_authorAlgorithm_clicked()
 }
 
 
+void MainWindow::on_sanghaviAlgorithm_clicked()
+{
+    cv::Mat imag = QPixmapToCvMat(this->imagePixels);
+    string text = ui->signature->text().toStdString();
+
+    int channels = imag.channels();
+    cv::Mat image;
+    imag.convertTo(imag, CV_32F, 1.0, 0.0);
+    cv::Mat Matvector[3];
+    cv::Mat charimage;
+    int i, j, k;
+
+    if (channels == 1) //чёрно-белое изображение
+    {
+        image = imag;
+        image.convertTo(charimage, CV_8U);
+    }
+
+    if (channels == 3) //цветное изображение
+    {
+
+        split(imag, Matvector);
+        image = Matvector[0];//встраивание в синюю компоненту
+        image.convertTo(charimage, CV_8U);
+    }
+
+    int rows = image.rows;
+    int cols = image.cols;
+
+    //Sanghavi 4 уровня
+    vector <cv::Mat> L1, L2, L3, L4;
+    //генерирование ЦВЗ
+    vector<bitset<8>> B1;
+    int length = text.length();
+    uchar temp;
+    for (i = 0; i < length; i++)
+    {
+        temp = (uchar)text[i];
+        bitset<8>p((temp));
+        B1.push_back(p);
+    }
+
+    int CVZsize = ceil(sqrt(length * 8));
+    cv::Mat CVZ(CVZsize, CVZsize, CV_8U);
+    for (i = 0; i < CVZsize; i++)
+    {
+        for (j = 0; j < CVZsize; j++)
+        {
+            if (i*CVZsize + j < length * 8)
+            {
+                if (B1[(i*CVZsize + j) / 8][(i*CVZsize + j) % 8] == 0)
+                {
+                    CVZ.at<uchar>(i, j) = 0;
+                }
+                if (B1[(i*CVZsize + j) / 8][(i*CVZsize + j) % 8] == 1)
+                {
+                    CVZ.at<uchar>(i, j) = 255;
+                }
+
+            }
+
+        }
+    }
+
+    imwrite("CVZ.jpg", CVZ);
+    cv::namedWindow(" ЦВЗ", cv::WINDOW_AUTOSIZE);
+    imshow(" ЦВЗ", CVZ);
+    cv::waitKey(0);
+    cv::destroyWindow("ЦВЗ");
+
+    //вейвлет-разложение
+    clock_t t1 = clock();
+    L1 = WaveletDec(image);
+    L2 = WaveletDec(L1[0]);
+    L3 = WaveletDec(L2[0]);
+
+    //встраивание ЦВЗ
+    int k1, km;
+    cv::Mat array = L3[2].reshape(1, 1);
+    if (text.size() * 40 >= array.cols)
+    {
+//		cout << "Изображение мало для встраивания" << endl;
+        int fg;
+//		cin >> fg;
+    }
+    float max, min,temp1;
+    for (i = 0; i < length; i++)
+    {
+        for (j = 0; j < 8; j++)
+        {
+            k1 = (i * 8 + j) * 5;
+            km = k1;
+            max = array.at<float>(k1);
+            min = array.at<float>(k1);
+            if (B1[i][j] == 1)
+            {
+                for (k = k1 + 1; k < k1 + 5; k++)
+                {
+                    if (array.at<float>(k) > max)
+                    {
+                        max = array.at<float>(k);
+                        km = k;
+
+                    }
+
+                }
+            }
+            if (B1[i][j] == 0)
+            {
+                for (k = k1 + 1; k < k1 + 5; k++)
+                {
+                    if (array.at<float>(k) < min)
+                    {
+                        min = array.at<float>(k);
+                        km = k;
+
+                    }
+
+                }
+
+            }
+            temp1 = array.at<float>(k1);
+            array.at<float>(k1) = array.at<float>(km);
+            array.at<float>(km) = temp1;
+
+        }
+    }
+
+    L3[2] = array.reshape(0, L3[1].rows);
+    //вейвлет-восстановление
+    vector <cv::Mat>LR1, LR2, LR3, LR4;
+    cv::Mat imr;
+    LR3 = L3;
+    cv::Mat LL2 = WaveletRec(LR3, L2[0].rows, L2[0].cols);
+    LR2.push_back(LL2);
+    for (i = 1; i <= 3; i++)
+    {
+    LR2.push_back(L2[i]);
+    }
+
+    cv::Mat LL1 = WaveletRec(LR2, L1[0].rows, L1[0].cols);
+    LR1.push_back(LL1);
+    for (i = 1; i <= 3; i++)
+    {
+    LR1.push_back(L1[i]);
+    }
+    imr = WaveletRec(LR1, rows, cols);
+    t1 = clock() - t1;
+
+//	cout << "Время встраивания ЦВЗ: " << (double)t1 / CLOCKS_PER_SEC << " секунд" << endl;
+    cv::Mat imrs;
+    imr.convertTo(imrs, CV_8U);
+    cv::Mat FResult;
+    string merged = first + "Sanghavi." + second;
+    if (channels == 1)
+    {
+        cv::namedWindow("Wavelet Reconstruction", 1);
+        imshow("Wavelet Reconstruction", imrs);
+        cv::waitKey(0);
+        FResult = imr;
+        imwrite(merged, FResult);
+
+    }
+
+    if (channels == 3)
+    {
+        vector<cv::Mat>Vec;
+        Vec.push_back(imr);
+        Vec.push_back(Matvector[1]);
+        Vec.push_back(Matvector[2]);
+        merge(Vec, FResult);
+        cv::Mat Fresult1;
+        FResult.convertTo(Fresult1, CV_8UC3);
+        cv::namedWindow("Wavelet Reconstruction", 1);
+        imshow("Wavelet Reconstruction", Fresult1);
+        cv::waitKey(0);
+        imwrite(merged, Fresult1);
+    }
+
+    //проверка качества
+    int md = MD(charimage, imrs);
+    double ad = AD(charimage, imrs);
+    double nad = NAD(charimage, imrs);
+    double mse = MSE(charimage, imrs);
+    double nmse = NMSE(charimage, imrs);
+    double snr = SNR(charimage, imrs);
+    double psnr = PSNR(charimage, imrs);
+    double If = IF(charimage, imrs);
+//	cout << endl;
+//	cout << "Показатели визуального искажения" << endl;
+//	cout << "Максимальная разность значений пикселов: " << md << endl;
+//	cout << "Средняя абсолютная разность значений пикселов: " << ad << endl;
+//	cout << "Нормированная средняя абсолютная разность: " << nad << endl;
+//	cout << "Отношение сигнал-шум: " << snr << endl;
+//	cout << "Максимальное отношение сигнал-шум: " << psnr << endl;
+//	cout << "Качество изображения: " << If * 100 << "%" << endl;
+
+
+    //обратный ход
+    string gettext;
+    vector<bitset<8>> B2;
+    //вейвлет-разложение
+    clock_t tt2 = clock();
+    vector <cv::Mat> LI1, LI2, LI3, LI4;
+    LI1 = WaveletDec(imr);
+    LI2 = WaveletDec(LI1[0]);
+    LI3 = WaveletDec(LI2[0]);
+    //извлечение ЦВЗ
+    for (i = 0; i < length; i++)
+    {
+        bitset<8>t1;
+        for (j = 0; j < 8; j++)
+        {
+            t1[j] = 0;
+        }
+        B2.push_back(t1);
+    }
+    int c;
+    cv::Mat Array = LI3[2].reshape(1, 1);
+    uchar t2;
+    for (i = 0; i < length; i++)
+    {
+        for (j = 0; j < 8; j++)
+        {
+            c = 0;
+            k1 = (i * 8 + j) * 5;
+            if (k1+4 >= Array.cols)
+            {
+                break;
+            }
+            for (k = 1; k < 5; k++)
+            {
+                if (Array.at<float>(k1) > Array.at<float>(k1 + k))
+                {
+                    c++;
+                }
+
+            }
+            if (c > 2)
+            {
+                B2[i][j] = 1;
+            }
+            if (c <= 2)
+            {
+                B2[i][j] = 0;
+            }
+
+        }
+        t2 = B2[i].to_ulong();
+        gettext.push_back(t2);
+
+    }
+    tt2 = clock() - tt2;
+//	cout << "Время извлечения ЦВЗ: " << (double)tt2 / CLOCKS_PER_SEC << " секунд" << endl;
+//	cout << gettext<<endl;
+
+}
+
 
 
 
 // ====ADDITIONAL FUNCTIONS=======
-vector<cv::Mat> MainWindow::WaveletDec()
+vector<cv::Mat> MainWindow::WaveletDec(cv::Mat image)
 {
-
-    cv::Mat image = QPixmapToCvMat(this->imagePixels);
     cv::Mat im1, im2, im3, im4, im5, im6, imd;
     int rcnt, ccnt;
     float a, b, c, d;
@@ -823,3 +1079,5 @@ double MainWindow::IF(cv::Mat cont, cv::Mat stego)//качество изобр�
     double if1 = 1 - (sum1 / sum2);
     return if1;
 }
+
+

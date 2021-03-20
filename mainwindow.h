@@ -28,10 +28,12 @@ private slots:
 
     void on_authorAlgorithm_clicked();
 
+    void on_sanghaviAlgorithm_clicked();
+
 private:
     Ui::MainWindow *ui;
 
-    vector<cv::Mat> WaveletDec();
+    vector<cv::Mat> WaveletDec(cv::Mat image);
     cv::Mat WaveletRec(vector<cv::Mat> Decomp,int rows,int cols);
     vector<cv::Mat> WaveletDec8();
     cv::Mat WaveletRec8(vector<cv::Mat> Decomp, int rows, int cols);

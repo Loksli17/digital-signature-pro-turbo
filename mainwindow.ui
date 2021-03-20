@@ -200,9 +200,9 @@
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>120</y>
+      <y>140</y>
       <width>491</width>
-      <height>421</height>
+      <height>401</height>
      </rect>
     </property>
     <property name="text">
@@ -222,7 +222,7 @@
      <string>Load image</string>
     </property>
    </widget>
-   <widget class="QLabel" name="label">
+   <widget class="QLabel" name="ad">
     <property name="geometry">
      <rect>
       <x>540</x>
@@ -235,7 +235,7 @@
      <string>TextLabel</string>
     </property>
    </widget>
-   <widget class="QLabel" name="label_2">
+   <widget class="QLabel" name="nad">
     <property name="geometry">
      <rect>
       <x>660</x>
@@ -248,7 +248,7 @@
      <string>TextLabel</string>
     </property>
    </widget>
-   <widget class="QLabel" name="label_3">
+   <widget class="QLabel" name="md">
     <property name="geometry">
      <rect>
       <x>600</x>
@@ -261,7 +261,7 @@
      <string>TextLabel</string>
     </property>
    </widget>
-   <widget class="QLabel" name="label_4">
+   <widget class="QLabel" name="mse">
     <property name="geometry">
      <rect>
       <x>540</x>
@@ -274,7 +274,7 @@
      <string>TextLabel</string>
     </property>
    </widget>
-   <widget class="QLabel" name="label_5">
+   <widget class="QLabel" name="nmse">
     <property name="geometry">
      <rect>
       <x>600</x>
@@ -287,7 +287,7 @@
      <string>TextLabel</string>
     </property>
    </widget>
-   <widget class="QLabel" name="label_6">
+   <widget class="QLabel" name="snr">
     <property name="geometry">
      <rect>
       <x>660</x>
@@ -300,10 +300,33 @@
      <string>TextLabel</string>
     </property>
    </widget>
-   <widget class="QLabel" name="label_7">
+   <widget class="QLabel" name="psnr">
     <property name="geometry">
      <rect>
       <x>540</x>
+      <y>520</y>
+      <width>47</width>
+      <height>13</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>TextLabel</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="signature">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>60</y>
+      <width>341</width>
+      <height>31</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="IF">
+    <property name="geometry">
+     <rect>
+      <x>600</x>
       <y>520</y>
       <width>47</width>
       <height>13</height>

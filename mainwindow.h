@@ -11,7 +11,7 @@
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
-using namespace cv;
+//using namespace cv;
 using namespace std;
 QT_END_NAMESPACE
 
@@ -31,22 +31,26 @@ private slots:
 private:
     Ui::MainWindow *ui;
 
-    vector<Mat> WaveletDec();
-    Mat WaveletRec(vector<Mat> Decomp,int rows,int cols);
-    vector<Mat> WaveletDec8();
-    Mat WaveletRec8(vector<Mat> Decomp, int rows, int cols);
+    vector<cv::Mat> WaveletDec();
+    cv::Mat WaveletRec(vector<cv::Mat> Decomp,int rows,int cols);
+    vector<cv::Mat> WaveletDec8();
+    cv::Mat WaveletRec8(vector<cv::Mat> Decomp, int rows, int cols);
     double sigma1(int x);
-    int MD(Mat cont, Mat stego);
-    double AD(Mat cont, Mat stego);
-    double NAD(Mat cont, Mat stego);
-    double MSE(Mat cont, Mat stego);
-    double NMSE(Mat cont, Mat stego);
-    double SNR(Mat cont, Mat stego);
-    double PSNR(Mat cont, Mat stego);
-    double IF(Mat cont, Mat stego);
+    int MD(cv::Mat cont, cv::Mat stego);
+    double AD(cv::Mat cont, cv::Mat stego);
+    double NAD(cv::Mat cont, cv::Mat stego);
+    double MSE(cv::Mat cont, cv::Mat stego);
+    double NMSE(cv::Mat cont, cv::Mat stego);
+    double SNR(cv::Mat cont, cv::Mat stego);
+    double PSNR(cv::Mat cont, cv::Mat stego);
+    double IF(cv::Mat cont, cv::Mat stego);
+
+    void setQualityInfo(int md, double ad, double nad, double mse, double nmse, double snr, double pnsr, double IF);
 
     QString imagePath;
     QPixmap imagePixels;
+    string  first;
+    string  second;
 
     cv::Mat mat;
 };

@@ -7,11 +7,12 @@
 #include <QMessageBox>
 #include <QDebug>
 #include <bitset>
+#include <Windows.h>
 
 
 #include "opencvhelpers.h"
 
-using namespace cv;
+//using namespace cv;
 using namespace std;
 
 
@@ -22,10 +23,21 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 }
 
-
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::setQualityInfo(int md, double ad, double nad, double mse, double nmse, double snr, double psnr, double IF){
+    qDebug() << md << nad;
+    ui->md->setText(QString::number(md));
+    ui->ad->setText(QString::number(ad));
+    ui->nad->setText(QString::number(nad));
+    ui->mse->setText(QString::number(mse));
+    ui->nmse->setText(QString::number(nmse));
+    ui->snr->setText(QString::number(snr));
+    ui->psnr->setText(QString::number(psnr));
+    ui->IF->setText(QString::number(IF));
 }
 
 
@@ -44,9 +56,17 @@ void MainWindow::on_loadImage_clicked()
     QStringList lst      = this->imagePath.split('/');
     QString     fileName = lst[lst.count() - 1];
 
+    string filename = this->imagePath.toStdString();
+
+    string separ(".");
+    string::size_type pos = filename.find(separ); // Позиция первого символа строки-разделителя.
+    this->first  = filename.substr(0, pos); // Строка до разделителя.
+    this->second = filename.substr(pos + separ.length()); // Строка после разделителя
+
+
     if(this->imagePath != ""){
         this->imagePixels.load(this->imagePath);
-        ui->imageWrap->setPixmap(this->imagePixels);
+        ui->imageWrap->setPixmap(this->imagePixels);       
         setWindowTitle(fileName);
         QMessageBox::information(this, "Success", "File: " + fileName + " was opened");
     }else{
@@ -57,17 +77,18 @@ void MainWindow::on_loadImage_clicked()
 
 void MainWindow::on_authorAlgorithm_clicked()
 {
-    Mat imag = QPixmapToCvMat(this->imagePixels);
+    cv::Mat imag = QPixmapToCvMat(this->imagePixels);
+    string text = ui->signature->text().toStdString();
 
-    double P; //шаг квантования
+    double P = 10; //шаг квантования
 //	cout << "Введите порог разности" << endl;/
 //	cin >> P;
 
     int channels = imag.channels();
-    Mat image;
-    Mat Matvector[3];
+    cv::Mat image;
+    cv::Mat Matvector[3];
     imag.convertTo(imag, CV_32F, 1.0, 0.0);
-    Mat charimage;
+    cv::Mat charimage;
     if (channels == 1) //чёрно-белое изображение
     {
         image = imag;
@@ -82,6 +103,274 @@ void MainWindow::on_authorAlgorithm_clicked()
     }
     int rows = image.rows;
     int cols = image.cols;
+
+    int N = 4;//размер блока
+    vector <cv::Mat> L1, L2, L3;
+    vector<bitset<8>> B1;
+
+    int length = text.length();
+    for (int i = 0; i < length; i++)
+    {
+        uchar temp = (uchar)text[i];
+        bitset<8>p((temp));
+        B1.push_back(p);
+    }
+
+    int CVZsize = ceil(sqrt(length * 8));
+    cv::Mat CVZ(CVZsize, CVZsize, CV_8U);
+    for (int i = 0; i < CVZsize; i++)
+    {
+        for (int j = 0; j < CVZsize; j++)
+        {
+            if (i*CVZsize + j < length * 8)
+            {
+                if (B1[(i*CVZsize + j) / 8][(i*CVZsize + j) % 8] == 0)
+                {
+                    CVZ.at<uchar>(i, j) = 0;
+                }
+                if (B1[(i*CVZsize + j) / 8][(i*CVZsize + j) % 8] == 1)
+                {
+                    CVZ.at<uchar>(i, j) = 255;
+                }
+
+            }
+
+        }
+    }
+
+    imwrite("CVZ.jpg", CVZ);
+    cv::namedWindow(" ЦВЗ", cv::WINDOW_AUTOSIZE);
+    imshow(" ЦВЗ", CVZ);
+    cv::waitKey(0);
+    cv::destroyWindow("ЦВЗ");
+
+    LARGE_INTEGER frequency;
+    LARGE_INTEGER t1, t2,t3,t4;
+    double elapsedTime;
+    QueryPerformanceFrequency(&frequency);
+    QueryPerformanceCounter(&t1);
+    L1 = WaveletDec();
+    int N1 = L1[0].rows / N;
+    int N2 = L1[0].cols / N;
+    if (8 * text.size() > N1*N2)
+    {
+//		cout << "Изображение слишком мало для встраивания" << endl;
+        int fg;
+//		cin >> fg;
+    }
+
+    int x1 = 2;
+    int y1 = 3;
+    int x2 = 3;
+    int y2 = 2;
+    double k1, k2;
+    int it = 0;
+    for (int i = 0; i < N1; i++)
+    {
+        if (i > 0)
+        {
+            y1 += N;
+            y2 += N;
+            x1 = 1;
+            x2 = 0;
+        }
+        for (int j = 0; j < N2; j++)
+        {
+            it++;
+            if (it >= text.size() * 8)
+            {
+                break;
+            }
+            if (j > 0)
+            {
+                x1 += N;
+                x2 += N;
+            }
+
+            k1 = fabs(L1[0].at<float>(y1, x1));
+            k2 = fabs(L1[0].at<float>(y2, x2));
+            double z1;
+            double z2;
+            if (L1[0].at<float>(y1, x1) >= 0)
+            {
+                z1 = 1;
+            }
+            if (L1[0].at<float>(y1, x1) < 0)
+            {
+                z1 = -1;
+            }
+            if (L1[0].at<float>(y2, x2) >= 0)
+            {
+                z2 = 1;
+            }
+            if (L1[0].at<float>(y2, x2) < 0)
+            {
+                z2 = -1;
+            }
+            if ((B1[(i*N2 + j) / 8][(i*N2 + j) % 8] == 0) && (k1 - k2 <= P))
+            {
+                k1 = P / 2 + k2 + 1;
+                k2 -= P / 2;
+            }
+            if ((B1[(i*N2 + j) / 8][(i*N2 + j) % 8] == 1) && (k1 - k2 >= -P))
+            {
+                k2 = P / 2 + k1 + 1;
+                k1 -= P / 2;
+            }
+            L1[0].at<float>(y1, x1) = z1*k1;
+            L1[0].at<float>(y2, x2) = z2*k2;
+        }
+    }
+
+    vector <cv::Mat>LR1;
+    cv::Mat imr;
+    LR1 = L1;
+    imr = WaveletRec(LR1, rows, cols);
+    QueryPerformanceCounter(&t2);
+    elapsedTime = (float)(t2.QuadPart - t1.QuadPart) / frequency.QuadPart;
+
+    /*t1 = clock() - t1;*/
+//	cout << "Время встраивания ЦВЗ: " << elapsedTime<< " секунд" << endl;
+    cv::Mat imrs;
+    imr.convertTo(imrs, CV_8U);
+    cv::Mat FResult(rows, cols, CV_32FC3);
+    string merged = this->first + "Proposed." + this->second;
+    if (channels == 1)
+    {
+        cv::namedWindow("Wavelet Reconstruction", 1);
+        imshow("Wavelet Reconstruction", imrs);
+        cv::waitKey(0);
+        FResult = imr;
+        imwrite(merged, FResult);
+    }
+    if (channels == 3)
+    {
+        vector<cv::Mat>Vec;
+        Vec.push_back(imr);
+        Vec.push_back(Matvector[1]);
+        Vec.push_back(Matvector[2]);
+        merge(Vec, FResult);
+        cv::Mat Fresult1;
+        FResult.convertTo(Fresult1, CV_8UC3);
+        cv::namedWindow("Wavelet Reconstruction", 1);
+        imshow("Wavelet Reconstruction", Fresult1);
+        cv::waitKey(0);
+        imwrite(merged, Fresult1);
+    }
+
+
+    //проверка качества
+    int md = MD(charimage, imrs);
+    double ad = AD(charimage, imrs);
+    double nad = NAD(charimage, imrs);
+    double mse = MSE(charimage, imrs);
+    double nmse = NMSE(charimage, imrs);
+    double snr = SNR(charimage, imrs);
+    double psnr = PSNR(charimage, imrs);
+    double If = IF(charimage, imrs);
+
+    qDebug() << "ADASDASDASDASd";
+    setQualityInfo(md, ad, nad, mse, nmse, snr, psnr, If);
+
+    string gettext;
+    vector<bitset<8>> B2;
+    //вейвлет-разложение
+    /*clock_t t2 = clock();*/
+    QueryPerformanceFrequency(&frequency);
+    QueryPerformanceCounter(&t1);
+    vector <cv::Mat> LI1;
+    LI1 = WaveletDec();
+    //извлечение ЦВЗ
+    for (int i = 0; i < length; i++)
+    {
+        bitset<8>t1;
+        for (int j = 0; j < 8; j++)
+        {
+            t1[j] = 0;
+        }
+        B2.push_back(t1);
+    }
+
+    ////коэффициенты
+    x1 = 2;
+    y1 = 3;
+    x2 = 3;
+    y2 = 2;
+    it = 0;
+    N1 = LI1[0].rows / N;
+    N2 = LI1[0].cols / N;
+    for (int i = 0; i < N1; i++)
+    {
+        if ((y1 >= LI1[0].rows) || (y2 >= LI1[0].rows))
+        {
+            break;
+        }
+        if (i > 0)
+        {
+            y1 += N;
+            y2 += N;
+            x1 = 1;
+            x2 = 0;
+        }
+        for (int j = 0; j < N2; j++)
+        {
+            it++;
+
+            if (j > 0)
+            {
+                x1 += N;
+                x2 += N;
+            }
+            if (it >= text.size() * 8)
+            {
+                break;
+            }
+            if ((x1 >= LI1[0].cols) || (x2 >= LI1[0].cols))
+            {
+                break;
+            }
+
+            k1 = fabs(LI1[0].at<float>(y1, x1));
+            k2 = fabs(LI1[0].at<float>(y2, x2));
+            double z1;
+            double z2;
+            if (LI1[0].at<float>(y1, x1) >= 0)
+            {
+                z1 = 1;
+            }
+            if (LI1[0].at<float>(y1, x1) < 0)
+            {
+                z1 = -1;
+            }
+            if (LI1[0].at<float>(y2, x2) >= 0)
+            {
+                z2 = 1;
+            }
+            if (LI1[0].at<float>(y2, x2) < 0)
+            {
+                z2 = -1;
+            }
+            if (k1 - k2 > P)
+            {
+                B2[(i*N2 + j) / 8][(i*N2 + j) % 8] = 0;
+            }
+            if (k1 - k2 < -P)
+            {
+                B2[(i*N2 + j) / 8][(i*N2 + j) % 8] = 1;
+            }
+        }
+    }
+    /*t2 = clock() - t2;*/
+    QueryPerformanceCounter(&t2);
+    elapsedTime = (float)(t2.QuadPart - t1.QuadPart) / frequency.QuadPart;
+//	cout << "Время извлечения ЦВЗ: " << elapsedTime << " секунд" << endl;
+    uchar s;
+    for (int i = 0; i < text.size(); i++)
+    {
+        s = B2[i].to_ulong();
+        gettext.push_back(s);
+    }
+//	cout << gettext << endl;
 }
 
 
@@ -89,20 +378,20 @@ void MainWindow::on_authorAlgorithm_clicked()
 
 
 // ====ADDITIONAL FUNCTIONS=======
-vector<Mat> MainWindow::WaveletDec()
+vector<cv::Mat> MainWindow::WaveletDec()
 {
 
-    Mat image = QPixmapToCvMat(this->imagePixels);
-    Mat im1, im2, im3, im4, im5, im6, imd;
+    cv::Mat image = QPixmapToCvMat(this->imagePixels);
+    cv::Mat im1, im2, im3, im4, im5, im6, imd;
     int rcnt, ccnt;
     float a, b, c, d;
 
-    im1 = Mat::zeros((image.rows+1) / 2, image.cols, CV_32F);
-    im2 = Mat::zeros((image.rows+1) / 2, image.cols, CV_32F);
-    im3 = Mat::zeros((image.rows+1) / 2, (image.cols+1) / 2, CV_32F);
-    im4 = Mat::zeros((image.rows+1) / 2, (image.cols+1) / 2, CV_32F);
-    im5 = Mat::zeros((image.rows+1) / 2, (image.cols+1) / 2, CV_32F);
-    im6 = Mat::zeros((image.rows+1) / 2, (image.cols+1) / 2, CV_32F);
+    im1 = cv::Mat::zeros((image.rows+1) / 2, image.cols, CV_32F);
+    im2 = cv::Mat::zeros((image.rows+1) / 2, image.cols, CV_32F);
+    im3 = cv::Mat::zeros((image.rows+1) / 2, (image.cols+1) / 2, CV_32F);
+    im4 = cv::Mat::zeros((image.rows+1) / 2, (image.cols+1) / 2, CV_32F);
+    im5 = cv::Mat::zeros((image.rows+1) / 2, (image.cols+1) / 2, CV_32F);
+    im6 = cv::Mat::zeros((image.rows+1) / 2, (image.cols+1) / 2, CV_32F);
 
     for (rcnt = 0; rcnt<image.rows; rcnt += 2)
     {
@@ -172,7 +461,7 @@ vector<Mat> MainWindow::WaveletDec()
     }
 
 
-    vector<Mat> result;
+    vector<cv::Mat> result;
     result.push_back(im3.clone());
     result.push_back(im4.clone());
     result.push_back(im5.clone());
@@ -180,15 +469,15 @@ vector<Mat> MainWindow::WaveletDec()
     return result;
 }
 
-Mat MainWindow::WaveletRec(vector<Mat> Decomp,int rows,int cols)
+cv::Mat MainWindow::WaveletRec(vector<cv::Mat> Decomp,int rows,int cols)
 {
     float a, b, c, d;
     int ccnt, rcnt;
-    Mat result = Mat::zeros(rows, cols, CV_32F);
-    Mat im11 = Mat::zeros((rows+1) / 2, cols, CV_32F);
-    Mat im12 = Mat::zeros((rows+1) / 2, cols, CV_32F);
-    Mat im13 = Mat::zeros((rows+1) / 2, cols, CV_32F);
-    Mat im14 = Mat::zeros((rows+1) / 2, cols, CV_32F);
+    cv::Mat result = cv::Mat::zeros(rows, cols, CV_32F);
+    cv::Mat im11   = cv::Mat::zeros((rows+1) / 2, cols, CV_32F);
+    cv::Mat im12   = cv::Mat::zeros((rows+1) / 2, cols, CV_32F);
+    cv::Mat im13   = cv::Mat::zeros((rows+1) / 2, cols, CV_32F);
+    cv::Mat im14   = cv::Mat::zeros((rows+1) / 2, cols, CV_32F);
 
     for (rcnt = 0; rcnt<(rows+1) / 2; rcnt++)
     {
@@ -238,7 +527,7 @@ Mat MainWindow::WaveletRec(vector<Mat> Decomp,int rows,int cols)
         }
     }
 
-    Mat  temp = Mat::zeros(rows, cols, CV_32F);
+    cv::Mat  temp = cv::Mat::zeros(rows, cols, CV_32F);
     for (rcnt = 0; rcnt<(rows+1) / 2; rcnt++)
     {
         for (ccnt = 0; ccnt<cols; ccnt++)
@@ -274,9 +563,9 @@ Mat MainWindow::WaveletRec(vector<Mat> Decomp,int rows,int cols)
     return result;
 }
 
-vector<Mat> MainWindow::WaveletDec8()
+vector<cv::Mat> MainWindow::WaveletDec8()
 {
-    Mat image = QPixmapToCvMat(this->imagePixels);
+    cv::Mat image = QPixmapToCvMat(this->imagePixels);
 
     float c = 0.9;
     int rows = image.rows;
@@ -293,7 +582,7 @@ vector<Mat> MainWindow::WaveletDec8()
     c6 = 0.0465;
     c7 = -0.015;
 
-    Mat Wave;
+    cv::Mat Wave;
     Wave = image.reshape(1,1);
     image = image.reshape(1, 1);
     float sum1;
@@ -341,11 +630,11 @@ vector<Mat> MainWindow::WaveletDec8()
     }
 
     Wave = Wave.reshape(1,rows);
-    vector<Mat> result;
-    Mat im3(rows / 2, cols / 2, CV_32F);
-    Mat im4(rows / 2, cols / 2, CV_32F);
-    Mat im5(rows / 2, cols / 2, CV_32F);
-    Mat im6(rows / 2, cols / 2, CV_32F);
+    vector<cv::Mat> result;
+    cv::Mat im3(rows / 2, cols / 2, CV_32F);
+    cv::Mat im4(rows / 2, cols / 2, CV_32F);
+    cv::Mat im5(rows / 2, cols / 2, CV_32F);
+    cv::Mat im6(rows / 2, cols / 2, CV_32F);
 
     for (int i = 0; i < rows / 2; i++)
     {
@@ -402,7 +691,7 @@ double MainWindow::sigma1(int x) //вспомогательная функция
 
 }
 
-int MainWindow::MD(Mat cont, Mat stego)//максимальная разность
+int MainWindow::MD(cv::Mat cont, cv::Mat stego)//максимальная разность
 {
     int max = abs(cont.at<uchar>(0, 0) - stego.at<uchar>(0, 0));
     for (int i = 0; i < cont.rows; i++)
@@ -420,7 +709,7 @@ int MainWindow::MD(Mat cont, Mat stego)//максимальная разност
 
 }
 
-double MainWindow::AD(Mat cont, Mat stego)//средняя абсолютная разность
+double MainWindow::AD(cv::Mat cont, cv::Mat stego)//средняя абсолютная разность
 {
 
     double sum = 0;
@@ -436,7 +725,7 @@ double MainWindow::AD(Mat cont, Mat stego)//средняя абсолютная 
 
 }
 
-double MainWindow::NAD(Mat cont, Mat stego)//нормированная средняя абсолютная разность
+double MainWindow::NAD(cv::Mat cont, cv::Mat stego)//нормированная средняя абсолютная разность
 {
     double sum1 = 0;
     double sum2 = 0;
@@ -452,7 +741,7 @@ double MainWindow::NAD(Mat cont, Mat stego)//нормированная сред
     return nad;
 }
 
-double MainWindow::MSE(Mat cont, Mat stego)//среднеквадратическая ошибка
+double MainWindow::MSE(cv::Mat cont, cv::Mat stego)//среднеквадратическая ошибка
 {
     double sum = 0;
     for (int i = 0; i < cont.rows; i++)
@@ -466,7 +755,7 @@ double MainWindow::MSE(Mat cont, Mat stego)//среднеквадратичес�
     return mse;
 }
 
-double MainWindow::NMSE(Mat cont, Mat stego)//нормированная среднеквадратическая ошибка
+double MainWindow::NMSE(cv::Mat cont, cv::Mat stego)//нормированная среднеквадратическая ошибка
 {
     double sum1 = 0;
     double sum2 = 0;
@@ -482,7 +771,7 @@ double MainWindow::NMSE(Mat cont, Mat stego)//нормированная сре�
     return nmse;
 }
 
-double MainWindow::SNR(Mat cont, Mat stego)//отношение "сигнал-шум"
+double MainWindow::SNR(cv::Mat cont, cv::Mat stego)//отношение "сигнал-шум"
 {
     double sum1 = 0;
     double sum2 = 0;
@@ -498,7 +787,7 @@ double MainWindow::SNR(Mat cont, Mat stego)//отношение "сигнал-ш
     return snr;
 }
 
-double MainWindow::PSNR(Mat cont, Mat stego)//максимальное отношение "сигнал-шум"
+double MainWindow::PSNR(cv::Mat cont, cv::Mat stego)//максимальное отношение "сигнал-шум"
 {
     double sum1 = 0;
     int max = cont.at<uchar>(0, 0);
@@ -519,7 +808,7 @@ double MainWindow::PSNR(Mat cont, Mat stego)//максимальное отно�
     return psnr;
 }
 
-double MainWindow::IF(Mat cont, Mat stego)//качество изображения
+double MainWindow::IF(cv::Mat cont, cv::Mat stego)//качество изображения
 {
     double sum1 = 0;
     double sum2 = 0;

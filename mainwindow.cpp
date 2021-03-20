@@ -40,6 +40,143 @@ void MainWindow::setQualityInfo(int md, double ad, double nad, double mse, doubl
     ui->IF->setText(QString::number(IF));
 }
 
+void MainWindow::setCurrentAlgorithm(QString name)
+{
+    currentAlgorithm = name;
+    ui->currentAlgorithm->setText(currentAlgorithm);
+}
+
+void MainWindow::decode()
+{
+
+    if (currentAlgorithm == "koch") {
+        decodeKoch();
+    }
+}
+
+void MainWindow::decodeKoch()
+{
+    cv::Mat imag = QPixmapToCvMat(this->imagePixels);
+    cv::Mat FResult = QPixmapToCvMat(imageProcessedPixels);
+
+    int contsize = imag.rows * imag.cols;
+
+    int N = 8;//размер блока
+    int Nc = contsize / (N * N);
+    double summ, znach;
+
+    string text = ui->signature->text().toStdString();
+    int length = text.length();
+
+    int heigh = FResult.rows;
+    int widt = FResult.cols;
+    //извлечение ЦВЗ
+//    cout << "Извлечение ЦВЗ" << endl;
+    clock_t t2 = clock();
+    int Nc1 = widt*heigh / (N * N);
+    //разбиение на сегменты
+    vector<cv::Mat>coofs1;
+    int ce = 0;
+    int re = 0;
+    for (int i = 0; i < Nc1; i++)
+    {
+        cv::Mat C(N, N, CV_8UC1);
+        for (int j = 0; j < N; j++)
+        {
+            for (int k = 0; k < N; k++)
+            {
+                if ((ce + j < heigh) && (re + k < widt))
+                {
+                    C.at<uchar>(j, k) = Matvector[0].at<uchar>(ce + j, re + k);
+                }
+
+
+            }
+        }
+        re += N;
+        if (re >= widt)
+        {
+            ce += N;
+            re = 0;
+        }
+        coofs1.push_back(C);
+    }
+
+    //дискретное косинусное преобразование
+    vector<double**> Sigma1;
+    for (int b = 0; b < Nc1; b++)
+    {
+        double** s = new double*[N];
+        for (int m = 0; m < N; m++)
+        {
+            double* si = new double[N];
+            s[m] = si;
+
+        }
+
+        for (int v = 0; v < N; v++)
+        {
+            for (int v1 = 0; v1 < N; v1++)
+            {
+                summ = 0;
+                for (int i = 0; i < N; i++)
+                {
+                    for (int j = 0; j < N; j++)
+                    {
+                        summ += coofs1[b].at<uchar>(i, j)*cos(CV_PI*v * (2 * i + 1) / (2 * N))*cos(CV_PI*v1 * (2 * j + 1) / (2 * N));
+
+                    }
+                }
+                znach = (sigma1(v)*sigma1(v1) / (sqrt(2 * N)))*summ;
+                s[v][v1] = znach;
+
+
+
+            }
+        }
+        Sigma1.push_back(s);
+    }
+
+    int it = 0;
+    vector<uchar>finalcodes;
+    bitset<8>cod;
+    for (int k = 0; k < length * 8; k++) {
+        om1 = fabs(Sigma1[k][x1][y1]);
+        om2 = fabs(Sigma1[k][x2][y2]);
+
+        if (om1>om2)
+        {
+            cod[it] = 0;
+        }
+
+        if (om1 < om2)
+        {
+            cod[it] = 1;
+        }
+        if (it < 8)
+        {
+            it++;
+        }
+        if (it == 8)
+        {
+            it = 0;
+            finalcodes.push_back(cod.to_ulong());
+            bitset<8>cod;
+        }
+
+    }
+
+    string ftext;
+    for (int i = 0; i < length; i++)
+    {
+        ftext.push_back(finalcodes[i]);
+    }
+    t2 = clock() - t2;
+
+    ui->decodedSignature->setText(QString::fromStdString(ftext));
+    ui->duration->setText(QString::number(t2 / CLOCKS_PER_SEC) + " sec");
+}
+
 
 //ui->imageWrap->setPixmap(cvMatToQPixmap(mat));
 //QPixmapToCvMat(this->imagePixels);
@@ -77,6 +214,8 @@ void MainWindow::on_loadImage_clicked()
 
 void MainWindow::on_authorAlgorithm_clicked()
 {
+    setCurrentAlgorithm("author");
+
     cv::Mat imag = QPixmapToCvMat(this->imagePixels);
     string text = ui->signature->text().toStdString();
 
@@ -373,9 +512,426 @@ void MainWindow::on_authorAlgorithm_clicked()
 //	cout << gettext << endl;
 }
 
+void MainWindow::on_kochAlgorithm_clicked()
+{
+    setCurrentAlgorithm("koch");
+
+    double P = 10; //шаг квантования
+    string text = ui->signature->text().toStdString();
+    cv::Mat imag = QPixmapToCvMat(this->imagePixels);
+
+    int i, j, k;
+    int channels = imag.channels();
+    int widt = imag.cols;
+    int heigh = imag.rows;
+    int contsize = widt*heigh;
+    int length = text.length();
+    cv::Mat start(heigh,widt,CV_8UC1);
+
+    if (channels == 1) //чёрно-белое изображение
+    {
+        start = imag;
+    }
+    if (channels == 3) //цветное изображение
+    {
+        split(imag, Matvector);
+        for (i = 0; i < heigh; i++)
+        {
+            for (j = 0; j < widt; j++)
+            {
+                start.at<uchar>(i, j) = Matvector[0].at<uchar>(i, j);
+            }
+        }
+    }
+    int N = 8;//размер блока
+    int Nc = contsize / (N * N);
+    if (8 * text.size() > Nc){
+        //        cout << "Изображение слишком мало для встраивания" << endl;
+        int fg;
+        //        cin >> fg;
+
+    }
+    vector<bitset<8>> M;
+    uchar temp;
+    for (i = 0; i < length; i++)
+    {
+        temp = (uchar)text[i];
+        bitset<8>m((temp));
+        M.push_back(m);
+    }
+    //    cout << "Встраивание ЦВЗ" << endl;
+    clock_t t1 = clock();
+    //разбиение на сегменты
+    vector<cv::Mat>coofs;
+    int c = 0;
+    int r = 0;
+    for (i = 0; i < Nc; i++)
+    {
+        cv::Mat C(N, N, CV_8UC1);
+        for (j = 0; j < N; j++)
+        {
+            for (k = 0; k < N; k++)
+            {
+                if ((c + j < heigh) && (r + k < widt))
+                {
+                    C.at<uchar>(j, k) = Matvector[0].at<uchar>(c + j, r + k);
+                }
+            }
+        }
+        r += N;
+        if (r >= widt)
+        {
+            c += N;
+            r = 0;
+        }
+        coofs.push_back(C);
+    }
+
+    //Вычисление коэффициентов ДКП
+    vector<double**> sigma;
+    for (int b = 0; b < Nc; b++)
+    {
+        double** s = new double*[N];
+        for (int m = 0; m < N; m++)
+        {
+            double* si = new double[N];
+            s[m] = si;
+
+        }
+
+        for (int v = 0; v < N; v++)
+        {
+            for (int v1 = 0; v1 < N; v1++)
+            {
+                double summ = 0;
+                for (i = 0; i < N; i++)
+                {
+                    for (j = 0; j < N; j++)
+                    {
+                        summ += coofs[b].at<uchar>(i, j)*cos(CV_PI*v * (2 * i + 1) / (2 * N))*cos(CV_PI*v1 * (2 * j + 1) / (2 * N));
+
+                    }
+                }
+                double znach = (sigma1(v)*sigma1(v1) / (sqrt(2 * N)))*summ;
+                s[v][v1] = znach;
+
+
+
+            }
+        }
+        sigma.push_back(s);
+    }
+    //коэффициенты
+    x1 = 4;
+    y1 = 5;
+    x2 = 5;
+    y2 = 4;
+    //встраивание
+    vector<double**> sigmaM;
+    sigmaM = sigma;
+//    double om1;
+//    double om2;
+//    double z1;
+//    double z2;
+    for (j = 0; j < length; j++)
+    {
+
+        for (i = 0; i < N; i++)
+        {
+            double ** sigmas = new double*[N];
+            for (int m = 0; m < N; m++)
+            {
+                double* si = new double[N];
+                sigmas[m] = si;
+
+            }
+
+            for (int i1 = 0; i1 < N; i1++)
+            {
+                for (int i2 = 0; i2 < N; i2++)
+                {
+                    sigmas[i1][i2] = sigma[N*j + i][i1][i2];
+
+                }
+            }
+            om1 = fabs(sigmas[x1][y1]);
+            om2 = fabs(sigmas[x2][y2]);
+            if (sigmas[x1][y1] >= 0)
+            {
+                z1 = 1;
+            }
+            if (sigmas[x1][y1] < 0)
+            {
+                z1 = -1;
+            }
+            if (sigmas[x2][y2] >= 0)
+            {
+                z2 = 1;
+            }
+            if (sigmas[x2][y2] < 0)
+            {
+                z2 = -1;
+            }
+
+            if ((M[j][i] == 0) && (om1 - om2 <= P))
+            {
+                om1 = P / 2 + om2 + 1;
+                om2 -= P / 2;
+            }
+            if ((M[j][i] == 1) && (om1 - om2 >= -P))
+            {
+                om2 = P / 2 + om1 + 1;
+                om1 -= P / 2;
+            }
+            sigmas[x1][y1] = z1*om1;
+            sigmas[x2][y2] = z2*om2;
+            sigmaM[j * N + i] = sigmas;
+        }
+
+
+    }
+    //обратное ДКП
+    vector<double**>Cms;
+    double summ, znach;
+    for (int b = 0; b < Nc; b++)
+    {
+        double** s = new double*[N];
+        for (int m = 0; m < N; m++)
+        {
+            double* si = new double[N];
+            s[m] = si;
+
+        }
+
+        for (int x = 0; x < N; x++)
+        {
+            for (int y = 0; y < N; y++)
+            {
+                summ = 0;
+                for (i = 0; i < N; i++)
+                {
+                    for (j = 0; j < N; j++)
+                    {
+                        summ += sigma1(i)*sigma1(j)*sigmaM[b][i][j] * cos(CV_PI*i * (2 * x + 1) / (2 * N))*cos(CV_PI*j * (2 * y + 1) / (2 * N));
+
+                    }
+                }
+                znach = summ / (sqrt(2 * N));
+                s[x][y] = znach;
+
+            }
+        }
+        Cms.push_back(s);
+    }
+
+    //нахождение минимума и максимума для нормировки
+    vector<double>max1;
+    vector<double>min1;
+    double maxv = Cms[0][0][0];
+    double minv = Cms[0][0][0];
+    for (i = 0; i < Nc; i++)
+    {
+
+        for (j = 0; j < N; j++)
+        {
+
+            for (k = 0; k < N; k++)
+            {
+                if (Cms[i][j][k]>maxv)
+                {
+                    maxv = Cms[i][j][k];
+                }
+                if (Cms[i][j][k] < minv)
+                {
+                    minv = Cms[i][j][k];
+
+                }
+
+
+            }
+        }
+
+    }
+
+
+    //нормировка и присвоение значений
+
+    int c1 = 0;
+    int r1 = 0;
+    double temp2;
+    for (i = 0; i < Nc; i++)
+    {
+        for (j = 0; j < N; j++)
+        {
+            for (k = 0; k < N; k++)
+            {
+                temp2 = (Cms[i][j][k] + minv) * 255 / (minv + maxv);
+                if ((c1 + j < heigh) && (r1 + k < widt))
+                {
+                    Matvector[0].at<uchar>(c1 + j, r1 + k) = (uchar)temp2;
+                }
+
+            }
+        }
+        r1 += N;
+        if (r1 >= widt)
+        {
+            c1 += N;
+            r1 = 0;
+        }
+    }
+
+    vector<cv::Mat>Vec;
+    Vec.push_back(Matvector[0]);
+    Vec.push_back(Matvector[1]);
+    Vec.push_back(Matvector[2]);
+    cv::Mat FResult(heigh, widt, CV_8UC3);
+    merge(Vec, FResult);
+    t1 = clock() - t1;
+
+    ui->duration->setText(QString::number(t1 / CLOCKS_PER_SEC) + " sec");
+    //    cout << "Время встраивания ЦВЗ: " << (double)t1 / CLOCKS_PER_SEC << " секунд" << endl;
+    //    namedWindow("Изображение с ЦВЗ", cv::WINDOW_AUTOSIZE);
+    //    imshow("Изображение с ЦВЗ", FResult);
+    //    cv::waitKey(0);
+    //    cv::destroyWindow("Изображение с ЦВЗ");
+    imageProcessedPixels = cvMatToQPixmap(FResult);
+    ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
+
+    int md = MD(start, Matvector[0]);
+    double ad = AD(start, Matvector[0]);
+    double nad = NAD(start, Matvector[0]);
+    double mse = MSE(start, Matvector[0]);
+    double nmse = NMSE(start, Matvector[0]);
+    double snr = SNR(start, Matvector[0]);
+    double psnr = PSNR(start, Matvector[0]);
+    double If = IF(start, Matvector[0]);
+    //    string merged = first + "Koch." + second;
+
+    setQualityInfo(md, ad, nad, mse, nmse, snr, psnr, If);
+    //    cv::imwrite(merged, FResult);
+    //    cout << endl;
+    //    cout << "Показатели визуального искажения" << endl;
+    //    cout << "Максимальная разность значений пикселов: " << md << endl;
+    //    cout << "Средняя абсолютная разность значений пикселов: " << ad << endl;
+    //    cout << "Нормированная средняя абсолютная разность: " << nad << endl;
+    //    cout << "Отношение сигнал-шум: " << snr << endl;
+    //    cout << "Максимальное отношение сигнал-шум: " << psnr << endl;
+    //    cout << "Качество изображения: " << If * 100 << "%" << endl;
+    //    FResult = Attack(FResult, heigh, widt);
+    //    heigh = FResult.rows;
+    //    widt = FResult.cols;
+    //    //извлечение ЦВЗ
+    ////    cout << "Извлечение ЦВЗ" << endl;
+    //    clock_t t2 = clock();
+    //    int Nc1 = widt*heigh / (N*N);
+    //    //разбиение на сегменты
+    //    vector<cv::Mat>coofs1;
+    //    int ce = 0;
+    //    int re = 0;
+    //    for (i = 0; i < Nc1; i++)
+    //    {
+    //        cv::Mat C(N, N, CV_8UC1);
+    //        for (j = 0; j < N; j++)
+    //        {
+    //            for (k = 0; k < N; k++)
+    //            {
+    //                if ((ce + j < heigh) && (re + k < widt))
+    //                {
+    //                    C.at<uchar>(j, k) = Matvector[0].at<uchar>(ce + j, re + k);
+    //                }
+
+
+    //            }
+    //        }
+    //        re += N;
+    //        if (re >= widt)
+    //        {
+    //            ce += N;
+    //            re = 0;
+    //        }
+    //        coofs1.push_back(C);
+    //    }
+
+    //    //дискретное косинусное преобразование
+    //    vector<double**> Sigma1;
+    //    for (int b = 0; b < Nc1; b++)
+    //    {
+    //        double** s = new double*[N];
+    //        for (int m = 0; m < N; m++)
+    //        {
+    //            double* si = new double[N];
+    //            s[m] = si;
+
+    //        }
+
+    //        for (int v = 0; v < N; v++)
+    //        {
+    //            for (int v1 = 0; v1 < N; v1++)
+    //            {
+    //                summ = 0;
+    //                for (int i = 0; i < N; i++)
+    //                {
+    //                    for (int j = 0; j < N; j++)
+    //                    {
+    //                        summ += coofs1[b].at<uchar>(i, j)*cos(CV_PI*v * (2 * i + 1) / (2 * N))*cos(CV_PI*v1 * (2 * j + 1) / (2 * N));
+
+    //                    }
+    //                }
+    //                znach = (sigma1(v)*sigma1(v1) / (sqrt(2 * N)))*summ;
+    //                s[v][v1] = znach;
+
+
+
+    //            }
+    //        }
+    //        Sigma1.push_back(s);
+    //    }
+
+    //    int it = 0;
+    //    vector<uchar>finalcodes;
+    //    bitset<8>cod;
+    //    for (k = 0; k < length * 8; k++)
+    //    {
+    //        om1 = fabs(Sigma1[k][x1][y1]);
+    //        om2 = fabs(Sigma1[k][x2][y2]);
+
+    //        if (om1>om2)
+    //        {
+    //            cod[it] = 0;
+    //        }
+
+    //        if (om1 < om2)
+    //        {
+    //            cod[it] = 1;
+    //        }
+    //        if (it < 8)
+    //        {
+    //            it++;
+    //        }
+    //        if (it == 8)
+    //        {
+    //            it = 0;
+    //            finalcodes.push_back(cod.to_ulong());
+    //            bitset<8>cod;
+    //        }
+
+    //    }
+
+    //    string ftext;
+    //    for (i = 0; i < length; i++)
+    //    {
+    //        ftext.push_back(finalcodes[i]);
+    //    }
+    //    t2 = clock() - t2;
+    //    cout << "Время извлечения ЦВЗ: " << (double)t2 / CLOCKS_PER_SEC << " секунд" << endl;
+    //    cout << "Исходное сообщение" << endl;
+    //    cout << ftext << endl;
+}
 
 void MainWindow::on_sanghaviAlgorithm_clicked()
 {
+    setCurrentAlgorithm("sanghavi");
     cv::Mat imag = QPixmapToCvMat(this->imagePixels);
     string text = ui->signature->text().toStdString();
 
@@ -634,8 +1190,349 @@ void MainWindow::on_sanghaviAlgorithm_clicked()
 
 
 
+// ====ATTACKS====
+cv::Mat Turn(cv::Mat src)//поворот на 60 градусов
+{
+    cv::Mat dst = cv::Mat::zeros(src.rows, src.cols, src.type());
+    cv::Mat rot_mat(2, 3, CV_32FC1);
+    cv::Point center = cv::Point(src.rows / 2, src.cols / 2);
+    double angle = -90.0;
+    double scale = 1;
+    rot_mat = getRotationMatrix2D(center, angle, scale);
+    warpAffine(src, dst, rot_mat, dst.size());//преобразование поворотом
+    namedWindow("Turned", cv::WINDOW_AUTOSIZE);
+    cv::Mat dst1;
+    if (dst.channels() == 1)
+    {
+        dst.convertTo(dst1, CV_8U);
+
+    }
+    if (dst.channels() == 3)
+    {
+        dst.convertTo(dst1, CV_8UC3);
+
+    }
+//    imshow("Turned", dst1);
+//    waitKey(0);
+//    destroyWindow("Turned");
+    return dst;
+}
+
+cv::Mat Resize(cv::Mat src, int heigh, int widt)//изменение размера
+{
+    cv::Mat dst;
+    resize(src, dst, cv::Size(), 0.5, 0.5, cv::INTER_AREA);//уменьшаем размер в 2 раза
+    heigh = heigh / 2;
+    widt = widt / 2;
+    cv::Mat dst1;
+    if (dst.channels() == 1)
+    {
+        dst.convertTo(dst1, CV_8U);
+
+    }
+    if (dst.channels() == 3)
+    {
+        dst.convertTo(dst1, CV_8UC3);
+
+    }
+//    namedWindow("Resized", WINDOW_AUTOSIZE);
+//    imshow("Resized", dst1);
+//    waitKey(0);
+//    destroyWindow("Resized");
+    return dst;
+}
+
+cv::Mat Gaussian(cv::Mat src)//сглаживание при помощи функции Гаусса
+{
+    cv::Mat dst;
+    GaussianBlur(src, dst, cv::Size(3, 3), 0, 0);
+    cv::Mat dst1;
+    if (dst.channels() == 1)
+    {
+        dst.convertTo(dst1, CV_8U);
+
+    }
+    if (dst.channels() == 3)
+    {
+        dst.convertTo(dst1, CV_8UC3);
+
+    }
+//    namedWindow("Gauss", WINDOW_AUTOSIZE);
+//    imshow("Gauss", dst1);
+//    waitKey(0);
+//    destroyWindow("Gauss");
+    return dst;
+}
+
+cv::Mat Chetkost(cv::Mat src)//повышение чёткости
+{
+    cv::Mat dst;
+    float kernel[9];
+    kernel[0] = -0.1;
+    kernel[1] = -0.1;
+    kernel[2] = -0.1;
+    kernel[3] = -0.1;
+    kernel[4] = 2;
+    kernel[5] = -0.1;
+    kernel[6] = -0.1;
+    kernel[7] = -0.1;
+    kernel[8] = -0.1;
+    cv::Mat kernel_matrix(3, 3, CV_32FC1, kernel);
+    filter2D(src, dst, -1, kernel_matrix, cv::Point(-1, 1), 0, cv::BORDER_DEFAULT);
+    cv::Mat dst1;
+    if (dst.channels() == 1)
+    {
+        dst.convertTo(dst1, CV_8U);
+
+    }
+    if (dst.channels() == 3)
+    {
+        dst.convertTo(dst1, CV_8UC3);
+
+    }
+//    namedWindow("Chetkost", WINDOW_AUTOSIZE);
+//    imshow("Chetkost", dst1);
+//    waitKey(0);
+//    destroyWindow("Chetkost");
+    return dst;
+}
+
+cv::Mat brightness(cv::Mat src)//увеличение яркости
+{
+    cv::Mat dst;
+    float kernel[9];
+    kernel[0] = -0.1;
+    kernel[1] = 0.2;
+    kernel[2] = -0.1;
+
+    kernel[3] = 0.2;
+    kernel[4] = 3;
+    kernel[5] = 0.2;
+
+    kernel[6] = -0.1;
+    kernel[7] = 0.2;
+    kernel[8] = -0.1;
+    cv::Mat kernel_matrix(3, 3, CV_32FC1, kernel);
+    filter2D(src, dst, -1, kernel_matrix, cv::Point(-1, 1), 0, cv::BORDER_DEFAULT);
+    cv::Mat dst1;
+    if (dst.channels() == 1)
+    {
+        dst.convertTo(dst1, CV_8U);
+
+    }
+    if (dst.channels() == 3)
+    {
+        dst.convertTo(dst1, CV_8UC3);
+
+    }
+//    namedWindow("Bright", WINDOW_AUTOSIZE);
+//    imshow("Bright", dst1);
+//    waitKey(0);
+//    destroyWindow("Bright");
+    return dst;
+}
+
+cv::Mat Dark(cv::Mat src)//уменьшение яркости
+{
+    cv::Mat dst;
+    float kernel[9];
+    kernel[0] = -0.1;
+    kernel[1] = 0.1;
+    kernel[2] = -0.1;
+
+    kernel[3] = 0.1;
+    kernel[4] = 0.5;
+    kernel[5] = 0.1;
+
+    kernel[6] = -0.1;
+    kernel[7] = 0.1;
+    kernel[8] = -0.1;
+    cv::Mat kernel_matrix(3, 3, CV_32FC1, kernel);
+    filter2D(src, dst, -1, kernel_matrix, cv::Point(-1, 1), 0, cv::BORDER_DEFAULT);
+    cv::Mat dst1;
+    if (dst.channels() == 1)
+    {
+        dst.convertTo(dst1, CV_8U);
+
+    }
+    if (dst.channels() == 3)
+    {
+        dst.convertTo(dst1, CV_8UC3);
+
+    }
+//    namedWindow("Dark", WINDOW_AUTOSIZE);
+//    imshow("Dark", dst1);
+//    waitKey(0);
+//    destroyWindow("Dark");
+    return dst;
+}
+
+cv::Mat Erode(cv::Mat src)
+{
+    cv::Mat dst;
+    int radius = 3;
+    cv::Mat element = getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(2 * radius + 1, 2 * radius + 1), cv::Point(radius, radius));
+    erode(src, dst, element);
+    cv::Mat dst1;
+    if (dst.channels() == 1)
+    {
+        dst.convertTo(dst1, CV_8U);
+
+    }
+    if (dst.channels() == 3)
+    {
+        dst.convertTo(dst1, CV_8UC3);
+
+    }
+//    namedWindow("Erode", cv::WINDOW_AUTOSIZE);
+//    imshow("Erode", dst1);
+//    cv::waitKey(0);
+//    cv::destroyWindow("Erode");
+    return dst;
+}
+
+cv::Mat CutRight(cv::Mat src, int heigh, int widt)
+{
+    src.convertTo(src, CV_32FC3, 1.0, 0.0);
+    int i, j;
+    int news = widt*0.8;
+    cv::Mat dst;
+    if (src.channels() == 3)
+    {
+        cv::Mat dst1(heigh, news, CV_32FC3);
+        for (i = 0; i < heigh; i++)
+        {
+            for (j = 0; j < news * 3; j++)
+            {
+                dst1.at<float>(i, j) = src.at<float>(i, j);
+            }
+        }
+        dst = dst1;
+    }
+    if (src.channels() == 1)
+    {
+        cv::Mat dst2(heigh, news, CV_32FC1);
+        for (i = 0; i < heigh; i++)
+        {
+            for (j = 0; j < news; j++)
+            {
+                dst2.at<float>(i, j) = src.at<float>(i, j);
+            }
+        }
+        dst = dst2;
+    }
+    cv::Mat dst3;
+    if (dst.channels() == 1)
+    {
+        dst.convertTo(dst3, CV_8U);
+
+    }
+    if (dst.channels() == 3)
+    {
+        dst.convertTo(dst3, CV_8UC3);
+
+    }
+//    namedWindow("Cut", cv::WINDOW_AUTOSIZE);
+//    imshow("Cut", dst3);
+//    cv::waitKey(0);
+//    cv::destroyWindow("Cut");
+    return dst;
+}
+
+cv::Mat CutDown(cv::Mat src, int heigh, int widt)
+{
+    src.convertTo(src, CV_32FC3, 1.0, 0.0);
+    int i, j;
+    int news = heigh*0.8;
+    cv::Mat dst;
+    if (src.channels() == 3)
+    {
+        cv::Mat dst1(news, widt, CV_32FC3);
+        for (i = 0; i < news; i++)
+        {
+            for (j = 0; j < widt * 3; j++)
+            {
+                dst1.at<float>(i, j) = src.at<float>(i, j);
+            }
+        }
+        dst = dst1;
+    }
+    if (src.channels() == 1)
+    {
+        cv::Mat dst2(news, widt, CV_32FC1);
+        for (i = 0; i < news; i++)
+        {
+            for (j = 0; j < widt * 3; j++)
+            {
+                dst2.at<float>(i, j) = src.at<float>(i, j);
+            }
+        }
+        dst = dst2;
+    }
+    cv::Mat dst3;
+    if (dst.channels() == 1)
+    {
+        dst.convertTo(dst3, CV_8U);
+
+    }
+    if (dst.channels() == 3)
+    {
+        dst.convertTo(dst3, CV_8UC3);
+
+    }
+//    namedWindow("Cut", cv::WINDOW_AUTOSIZE);
+//    imshow("Cut", dst3);
+//    cv::waitKey(0);
+//    cv::destroyWindow("Cut");
+    return dst;
+}
+
+cv::Mat JPEGComp(cv::Mat src)
+{
+    vector<int> compression_params;
+    compression_params.push_back(cv::IMWRITE_JPEG_QUALITY);
+    int x = 40;
+//    cout << "Введите коэффициент сжатия в процентах" << endl;
+//    cin >> x;
+    compression_params.push_back(x);
+    cv::Mat src1;
+    cv::Mat dst;
+    imwrite("Comp.jpg", src, compression_params);
+    dst = imread("Comp.jpg", cv::IMREAD_COLOR);
+    cv::Mat dst1;
+    if (dst.channels() == 1)
+    {
+        dst.convertTo(dst1, CV_8U);
+    }
+
+    if (src.channels() == 3)
+    {
+        dst.convertTo(dst1, CV_8UC3);
+    }
+//    cv::imshow("Comp.jpg", dst1);
+//    cv::waitKey(0);
+//    cv::destroyWindow("Comp.jpg");
+    return dst;
+
+}
+
+
+void MainWindow::on_jpegCompression_clicked()
+{
+    cv::Mat FResult = JPEGComp(QPixmapToCvMat(imageProcessedPixels));
+    qDebug() << "aaaaaaaa";
+    imageProcessedPixels = cvMatToQPixmap(FResult);
+    ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
+}
+
+void MainWindow::on_pushButton_10_clicked()
+{
+    decode();
+}
 
 // ====ADDITIONAL FUNCTIONS=======
+
+
 vector<cv::Mat> MainWindow::WaveletDec(cv::Mat image)
 {
     cv::Mat im1, im2, im3, im4, im5, im6, imd;
@@ -755,9 +1652,9 @@ cv::Mat MainWindow::WaveletRec(vector<cv::Mat> Decomp,int rows,int cols)
 
             a = im11.at<float>(rcnt, ccnt);
             b = im12.at<float>(rcnt, ccnt);
-            c = (a + b)*0.707;
+            c = (a + b) * 0.707;
             im11.at<float>(rcnt, ccnt) = c;
-            d = (a - b)*0.707;                     //Filtering at Stage I
+            d = (a - b) * 0.707;                     //Filtering at Stage I
             if (ccnt + 1 < cols)
             {
                 im11.at<float>(rcnt, ccnt + 1) = d;
@@ -1079,5 +1976,3 @@ double MainWindow::IF(cv::Mat cont, cv::Mat stego)//качество изобр�
     double if1 = 1 - (sum1 / sum2);
     return if1;
 }
-
-

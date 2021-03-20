@@ -30,6 +30,12 @@ private slots:
 
     void on_sanghaviAlgorithm_clicked();
 
+    void on_kochAlgorithm_clicked();
+
+    void on_jpegCompression_clicked();
+
+    void on_pushButton_10_clicked();
+
 private:
     Ui::MainWindow *ui;
 
@@ -48,11 +54,30 @@ private:
     double IF(cv::Mat cont, cv::Mat stego);
 
     void setQualityInfo(int md, double ad, double nad, double mse, double nmse, double snr, double pnsr, double IF);
+    void setCurrentAlgorithm(QString name);
+    void decode();
 
+    void decodeKoch();
+
+//    cv::Mat
     QString imagePath;
+    QString currentAlgorithm;
     QPixmap imagePixels;
+    QPixmap imageProcessedPixels;
     string  first;
     string  second;
+
+    cv::Mat Matvector[3];
+
+    int x1;
+    int y1;
+    int x2;
+    int y2;
+
+    double om1;
+    double om2;
+    double z1;
+    double z2;
 
     cv::Mat mat;
 };

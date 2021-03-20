@@ -124,11 +124,11 @@ void MainWindow::on_authorAlgorithm_clicked()
         {
             if (i*CVZsize + j < length * 8)
             {
-                if (B1[(i*CVZsize + j) / 8][(i*CVZsize + j) % 8] == 0)
+                if (B1[(i * CVZsize + j) / 8][(i * CVZsize + j) % 8] == 0)
                 {
                     CVZ.at<uchar>(i, j) = 0;
                 }
-                if (B1[(i*CVZsize + j) / 8][(i*CVZsize + j) % 8] == 1)
+                if (B1[(i * CVZsize + j) / 8][(i * CVZsize + j) % 8] == 1)
                 {
                     CVZ.at<uchar>(i, j) = 255;
                 }
@@ -152,7 +152,7 @@ void MainWindow::on_authorAlgorithm_clicked()
     L1 = WaveletDec();
     int N1 = L1[0].rows / N;
     int N2 = L1[0].cols / N;
-    if (8 * text.size() > N1*N2)
+    if (8 * text.size() > N1 * N2)
     {
 //		cout << "Изображение слишком мало для встраивания" << endl;
         int fg;

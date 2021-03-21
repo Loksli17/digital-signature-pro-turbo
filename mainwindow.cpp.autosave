@@ -308,7 +308,6 @@ void MainWindow::decodeSanghavi(){
     int P = 10;
     int length = text.length();
 
-
     if (imr.channels() == 1)
     {
         imr = FResult;

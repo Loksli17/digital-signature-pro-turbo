@@ -119,5 +119,6 @@ private:
 
     cv::Mat mat;
     cv::Mat FResult;
+    cv::Mat algResult;
 };
 #endif // MAINWINDOW_H

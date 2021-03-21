@@ -8,6 +8,7 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <windows.h>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -58,6 +59,9 @@ private:
     void decode();
 
     void decodeKoch();
+    void decodeAuthor();
+    void decodeSanghavi();
+    void decodeSoheili();
 
 //    cv::Mat
     QString imagePath;
@@ -78,6 +82,12 @@ private:
     double om2;
     double z1;
     double z2;
+
+    LARGE_INTEGER authorFrequency;
+    LARGE_INTEGER authorT1;
+    LARGE_INTEGER authorT2;
+    int           authorN;
+    int           author;
 
     cv::Mat mat;
 };

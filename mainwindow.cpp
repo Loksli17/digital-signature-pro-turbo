@@ -51,8 +51,13 @@ void MainWindow::decode()
 
     if (currentAlgorithm == "koch") {
         decodeKoch();
+    }else if(currentAlgorithm == "author"){
+        decodeAuthor();
+    }else if(currentAlgorithm == "sanghavi"){
+//        decodeSanghavi();
     }
 }
+
 
 void MainWindow::decodeKoch()
 {
@@ -178,6 +183,120 @@ void MainWindow::decodeKoch()
 }
 
 
+void MainWindow::decodeAuthor(){
+
+    cv::Mat imr = QPixmapToCvMat(this->imageProcessedPixels);
+    string text = ui->signature->text().toStdString();
+    int P = 10;
+    int length = text.length();
+
+    string gettext;
+    vector<bitset<8>> B2;
+    //вейвлет-разложение
+    /*clock_t t2 = clock();*/
+    QueryPerformanceFrequency(&this->authorFrequency);
+    QueryPerformanceCounter(&this->authorT1);
+    vector <cv::Mat> LI1;
+    LI1 = WaveletDec(imr);
+
+    for (int i = 0; i < length; i++)
+    {
+        bitset<8>t1;
+        for (int j = 0; j < 8; j++)
+        {
+            t1[j] = 0;
+        }
+        B2.push_back(t1);
+    }
+
+    ////коэффициенты
+    x1 = 2;
+    y1 = 3;
+    x2 = 3;
+    y2 = 2;
+    int it = 0;
+
+    int N = this->authorN;
+    int N1 = LI1[0].rows / N;
+    int N2 = LI1[0].cols / N;
+
+    for (int i = 0; i < N1; i++)
+    {
+        if ((y1 >= LI1[0].rows) || (y2 >= LI1[0].rows))
+        {
+            break;
+        }
+        if (i > 0)
+        {
+            y1 += N;
+            y2 += N;
+            x1 = 1;
+            x2 = 0;
+        }
+        for (int j = 0; j < N2; j++)
+        {
+            it++;
+
+            if (j > 0)
+            {
+                x1 += N;
+                x2 += N;
+            }
+            if (it >= text.size() * 8)
+            {
+                break;
+            }
+            if ((x1 >= LI1[0].cols) || (x2 >= LI1[0].cols))
+            {
+                break;
+            }
+
+            double k1 = fabs(LI1[0].at<float>(y1, x1));
+            double k2 = fabs(LI1[0].at<float>(y2, x2));
+            double z1;
+            double z2;
+            if (LI1[0].at<float>(y1, x1) >= 0)
+            {
+                z1 = 1;
+            }
+            if (LI1[0].at<float>(y1, x1) < 0)
+            {
+                z1 = -1;
+            }
+            if (LI1[0].at<float>(y2, x2) >= 0)
+            {
+                z2 = 1;
+            }
+            if (LI1[0].at<float>(y2, x2) < 0)
+            {
+                z2 = -1;
+            }
+            if (k1 - k2 > P)
+            {
+                B2[(i*N2 + j) / 8][(i*N2 + j) % 8] = 0;
+            }
+            if (k1 - k2 < -P)
+            {
+                B2[(i*N2 + j) / 8][(i*N2 + j) % 8] = 1;
+            }
+        }
+    }
+    /*t2 = clock() - t2;*/
+    QueryPerformanceCounter(&this->authorT2);
+    double elapsedTime = (float)(this->authorT2.QuadPart - this->authorT1.QuadPart) / this->authorFrequency.QuadPart;
+//	cout << "Время извлечения ЦВЗ: " << elapsedTime << " секунд" << endl;
+    uchar s;
+    for (int i = 0; i < text.size(); i++)
+    {
+        s = B2[i].to_ulong();
+        gettext.push_back(s);
+    }
+
+    ui->decodedSignature->setText(QString::fromStdString(gettext));
+    ui->duration->setText(QString::number(elapsedTime / CLOCKS_PER_SEC) + " sec");
+}
+
+
 //ui->imageWrap->setPixmap(cvMatToQPixmap(mat));
 //QPixmapToCvMat(this->imagePixels);
 
@@ -244,6 +363,8 @@ void MainWindow::on_authorAlgorithm_clicked()
     int cols = image.cols;
 
     int N = 4;//размер блока
+    this->authorN = N;
+
     vector <cv::Mat> L1, L2, L3;
     vector<bitset<8>> B1;
 
@@ -278,19 +399,26 @@ void MainWindow::on_authorAlgorithm_clicked()
     }
 
     imwrite("CVZ.jpg", CVZ);
-    cv::namedWindow(" ЦВЗ", cv::WINDOW_AUTOSIZE);
-    imshow(" ЦВЗ", CVZ);
-    cv::waitKey(0);
-    cv::destroyWindow("ЦВЗ");
+//    cv::namedWindow(" ЦВЗ", cv::WINDOW_AUTOSIZE);
+//    imshow(" ЦВЗ", CVZ);
+//    cv::waitKey(0);
+//    cv::destroyWindow("ЦВЗ");
 
     LARGE_INTEGER frequency;
     LARGE_INTEGER t1, t2,t3,t4;
+
+    this->authorFrequency = frequency;
+    this->authorT1        = t1;
+    this->authorT2        = t2;
+
+
     double elapsedTime;
     QueryPerformanceFrequency(&frequency);
     QueryPerformanceCounter(&t1);
     L1 = WaveletDec(image);
     int N1 = L1[0].rows / N;
     int N2 = L1[0].cols / N;
+
     if (8 * text.size() > N1 * N2)
     {
 //		cout << "Изображение слишком мало для встраивания" << endl;
@@ -303,6 +431,7 @@ void MainWindow::on_authorAlgorithm_clicked()
     int x2 = 3;
     int y2 = 2;
     double k1, k2;
+
     int it = 0;
     for (int i = 0; i < N1; i++)
     {
@@ -368,17 +497,21 @@ void MainWindow::on_authorAlgorithm_clicked()
     QueryPerformanceCounter(&t2);
     elapsedTime = (float)(t2.QuadPart - t1.QuadPart) / frequency.QuadPart;
 
-    /*t1 = clock() - t1;*/
-//	cout << "Время встраивания ЦВЗ: " << elapsedTime<< " секунд" << endl;
+    ui->duration->setText(QString::number(elapsedTime / CLOCKS_PER_SEC) + " sec");
+
     cv::Mat imrs;
     imr.convertTo(imrs, CV_8U);
     cv::Mat FResult(rows, cols, CV_32FC3);
     string merged = this->first + "Proposed." + this->second;
+
+
     if (channels == 1)
     {
         cv::namedWindow("Wavelet Reconstruction", 1);
-        imshow("Wavelet Reconstruction", imrs);
-        cv::waitKey(0);
+
+        imageProcessedPixels = cvMatToQPixmap(imrs);
+        ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
+
         FResult = imr;
         imwrite(merged, FResult);
     }
@@ -391,9 +524,11 @@ void MainWindow::on_authorAlgorithm_clicked()
         merge(Vec, FResult);
         cv::Mat Fresult1;
         FResult.convertTo(Fresult1, CV_8UC3);
-        cv::namedWindow("Wavelet Reconstruction", 1);
-        imshow("Wavelet Reconstruction", Fresult1);
-        cv::waitKey(0);
+//        cv::namedWindow("Wavelet Reconstruction", 1);
+
+        imageProcessedPixels = cvMatToQPixmap(Fresult1);
+        ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
+
         imwrite(merged, Fresult1);
     }
 
@@ -408,108 +543,7 @@ void MainWindow::on_authorAlgorithm_clicked()
     double psnr = PSNR(charimage, imrs);
     double If = IF(charimage, imrs);
 
-    qDebug() << "ADASDASDASDASd";
     setQualityInfo(md, ad, nad, mse, nmse, snr, psnr, If);
-
-    string gettext;
-    vector<bitset<8>> B2;
-    //вейвлет-разложение
-    /*clock_t t2 = clock();*/
-    QueryPerformanceFrequency(&frequency);
-    QueryPerformanceCounter(&t1);
-    vector <cv::Mat> LI1;
-    LI1 = WaveletDec(imr);
-    //извлечение ЦВЗ
-    for (int i = 0; i < length; i++)
-    {
-        bitset<8>t1;
-        for (int j = 0; j < 8; j++)
-        {
-            t1[j] = 0;
-        }
-        B2.push_back(t1);
-    }
-
-    ////коэффициенты
-    x1 = 2;
-    y1 = 3;
-    x2 = 3;
-    y2 = 2;
-    it = 0;
-    N1 = LI1[0].rows / N;
-    N2 = LI1[0].cols / N;
-    for (int i = 0; i < N1; i++)
-    {
-        if ((y1 >= LI1[0].rows) || (y2 >= LI1[0].rows))
-        {
-            break;
-        }
-        if (i > 0)
-        {
-            y1 += N;
-            y2 += N;
-            x1 = 1;
-            x2 = 0;
-        }
-        for (int j = 0; j < N2; j++)
-        {
-            it++;
-
-            if (j > 0)
-            {
-                x1 += N;
-                x2 += N;
-            }
-            if (it >= text.size() * 8)
-            {
-                break;
-            }
-            if ((x1 >= LI1[0].cols) || (x2 >= LI1[0].cols))
-            {
-                break;
-            }
-
-            k1 = fabs(LI1[0].at<float>(y1, x1));
-            k2 = fabs(LI1[0].at<float>(y2, x2));
-            double z1;
-            double z2;
-            if (LI1[0].at<float>(y1, x1) >= 0)
-            {
-                z1 = 1;
-            }
-            if (LI1[0].at<float>(y1, x1) < 0)
-            {
-                z1 = -1;
-            }
-            if (LI1[0].at<float>(y2, x2) >= 0)
-            {
-                z2 = 1;
-            }
-            if (LI1[0].at<float>(y2, x2) < 0)
-            {
-                z2 = -1;
-            }
-            if (k1 - k2 > P)
-            {
-                B2[(i*N2 + j) / 8][(i*N2 + j) % 8] = 0;
-            }
-            if (k1 - k2 < -P)
-            {
-                B2[(i*N2 + j) / 8][(i*N2 + j) % 8] = 1;
-            }
-        }
-    }
-    /*t2 = clock() - t2;*/
-    QueryPerformanceCounter(&t2);
-    elapsedTime = (float)(t2.QuadPart - t1.QuadPart) / frequency.QuadPart;
-//	cout << "Время извлечения ЦВЗ: " << elapsedTime << " секунд" << endl;
-    uchar s;
-    for (int i = 0; i < text.size(); i++)
-    {
-        s = B2[i].to_ulong();
-        gettext.push_back(s);
-    }
-//	cout << gettext << endl;
 }
 
 void MainWindow::on_kochAlgorithm_clicked()
@@ -626,6 +660,7 @@ void MainWindow::on_kochAlgorithm_clicked()
     y1 = 5;
     x2 = 5;
     y2 = 4;
+
     //встраивание
     vector<double**> sigmaM;
     sigmaM = sigma;
@@ -932,6 +967,7 @@ void MainWindow::on_kochAlgorithm_clicked()
 void MainWindow::on_sanghaviAlgorithm_clicked()
 {
     setCurrentAlgorithm("sanghavi");
+
     cv::Mat imag = QPixmapToCvMat(this->imagePixels);
     string text = ui->signature->text().toStdString();
 

@@ -301,11 +301,22 @@ void MainWindow::decodeAuthor(){
 
 
 void MainWindow::decodeSanghavi(){
-
+    
     cv::Mat imr = QPixmapToCvMat(this->imageProcessedPixels);
     string text = ui->signature->text().toStdString();
     int P = 10;
     int length = text.length();
+    
+    
+//    if (channels == 1)
+//	{
+//		imr = FResult;
+//	}
+//	if (channels == 3)
+//	{
+//		split(FResult, Matvector);
+//		Matvector[0].convertTo(imr, CV_32FC1, 1.0, 0.0);
+//	}
 
     string gettext;
     vector<bitset<8>> B2;

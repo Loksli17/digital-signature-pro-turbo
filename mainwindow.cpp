@@ -401,6 +401,8 @@ void MainWindow::on_loadImage_clicked()
         this->width  = image.rows;
         this->height = image.cols;
 
+        qDebug() << this->width << this->height;
+
         setWindowTitle(fileName);
         QMessageBox::information(this, "Success", "File: " + fileName + " was opened");
     }else{
@@ -1180,6 +1182,9 @@ cv::Mat Resize(cv::Mat src, int heigh, int widt)//изменение разме�
 //    imshow("Resized", dst1);
 //    waitKey(0);
 //    destroyWindow("Resized");
+
+    qDebug() << "RESIZE" << heigh << widt;
+
     return dst;
 }
 
@@ -1253,9 +1258,11 @@ cv::Mat brightness(cv::Mat src)//увеличение яркости
     kernel[6] = -0.1;
     kernel[7] = 0.2;
     kernel[8] = -0.1;
+
     cv::Mat kernel_matrix(3, 3, CV_32FC1, kernel);
     filter2D(src, dst, -1, kernel_matrix, cv::Point(-1, 1), 0, cv::BORDER_DEFAULT);
     cv::Mat dst1;
+
     if (dst.channels() == 1)
     {
         dst.convertTo(dst1, CV_8U);
@@ -1380,19 +1387,21 @@ cv::Mat CutRight(cv::Mat src, int heigh, int widt)
     return dst;
 }
 
-cv::Mat CutDown(cv::Mat src)
+cv::Mat CutDown(cv::Mat src, int heigh, int widt)
 {
-    int heigh = src.cols;
-    int widt  = src.rows;
 
     src.convertTo(src, CV_32FC3, 1.0, 0.0);
     int i, j;
     int news = heigh*0.8;
     cv::Mat dst;
 
+
     if (src.channels() == 3)
     {
+        qDebug() << src.channels();
+
         cv::Mat dst1(news, widt, CV_32FC3);
+
         for (i = 0; i < news; i++)
         {
             for (j = 0; j < widt * 3; j++)
@@ -1400,12 +1409,16 @@ cv::Mat CutDown(cv::Mat src)
                 dst1.at<float>(i, j) = src.at<float>(i, j);
             }
         }
+
         dst = dst1;
     }
+
+    qDebug() << "this 2";
 
     if (src.channels() == 1)
     {
         cv::Mat dst2(news, widt, CV_32FC1);
+
         for (i = 0; i < news; i++)
         {
             for (j = 0; j < widt * 3; j++)
@@ -1417,6 +1430,9 @@ cv::Mat CutDown(cv::Mat src)
     }
 
     cv::Mat dst3;
+
+    qDebug() << "this 3";
+
     if (dst.channels() == 1)
     {
         dst.convertTo(dst3, CV_8U);
@@ -1427,6 +1443,7 @@ cv::Mat CutDown(cv::Mat src)
         dst.convertTo(dst3, CV_8UC3);
 
     }
+
 //    namedWindow("Cut", cv::WINDOW_AUTOSIZE);
 //    imshow("Cut", dst3);
 //    cv::waitKey(0);
@@ -1472,6 +1489,8 @@ void MainWindow::on_jpegCompression_clicked()
     qDebug() << "aaaaaaaa";
     imageProcessedPixels = cvMatToQPixmap(FResult);
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
+    this->width  = FResult.rows;
+    this->height = FResult.cols;
 }
 
 void MainWindow::on_Dark_clicked()
@@ -1480,6 +1499,8 @@ void MainWindow::on_Dark_clicked()
     qDebug() << "dark";
     imageProcessedPixels = cvMatToQPixmap(FResult);
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
+    this->width  = FResult.rows;
+    this->height = FResult.cols;
 }
 
 void MainWindow::on_resize_clicked()
@@ -1487,6 +1508,8 @@ void MainWindow::on_resize_clicked()
     cv::Mat FResult = Resize(QPixmapToCvMat(imageProcessedPixels), this->height, this->width);
     imageProcessedPixels = cvMatToQPixmap(FResult);
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
+    this->width  = FResult.rows;
+    this->height = FResult.cols;
 }
 
 void MainWindow::on_turn_clicked()
@@ -1494,6 +1517,8 @@ void MainWindow::on_turn_clicked()
     cv::Mat FResult = Turn(QPixmapToCvMat(imageProcessedPixels));
     imageProcessedPixels = cvMatToQPixmap(FResult);
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
+    this->width  = FResult.rows;
+    this->height = FResult.cols;
 }
 
 void MainWindow::on_gaussian_clicked()
@@ -1501,6 +1526,8 @@ void MainWindow::on_gaussian_clicked()
     cv::Mat FResult = Gaussian(QPixmapToCvMat(imageProcessedPixels));
     imageProcessedPixels = cvMatToQPixmap(FResult);
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
+    this->width  = FResult.rows;
+    this->height = FResult.cols;
 }
 
 void MainWindow::on_checkost_clicked()
@@ -1508,6 +1535,8 @@ void MainWindow::on_checkost_clicked()
     cv::Mat FResult = Chetkost(QPixmapToCvMat(imageProcessedPixels));
     imageProcessedPixels = cvMatToQPixmap(FResult);
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
+    this->width  = FResult.rows;
+    this->height = FResult.cols;
 }
 
 void MainWindow::on_brightness_clicked()
@@ -1515,6 +1544,8 @@ void MainWindow::on_brightness_clicked()
     cv::Mat FResult = brightness(QPixmapToCvMat(imageProcessedPixels));
     imageProcessedPixels = cvMatToQPixmap(FResult);
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
+    this->width  = FResult.rows;
+    this->height = FResult.cols;
 }
 
 void MainWindow::on_erode_clicked()
@@ -1522,6 +1553,8 @@ void MainWindow::on_erode_clicked()
     cv::Mat FResult = Erode(QPixmapToCvMat(imageProcessedPixels));
     imageProcessedPixels = cvMatToQPixmap(FResult);
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
+    this->width  = FResult.rows;
+    this->height = FResult.cols;
 }
 
 void MainWindow::on_cutRight_clicked()
@@ -1529,13 +1562,18 @@ void MainWindow::on_cutRight_clicked()
     cv::Mat FResult = CutRight(QPixmapToCvMat(imageProcessedPixels), this->height, this->width);
     imageProcessedPixels = cvMatToQPixmap(FResult);
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
+    this->width  = FResult.rows;
+    this->height = FResult.cols;
 }
 
 void MainWindow::on_cutDown_clicked()
 {
-    cv::Mat FResult = CutDown(QPixmapToCvMat(imageProcessedPixels));
+    cv::Mat FResult = CutDown(QPixmapToCvMat(imageProcessedPixels), this->height, this->width);
     imageProcessedPixels = cvMatToQPixmap(FResult);
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
+    qDebug() << FResult.rows;
+    this->width  = FResult.rows;
+    this->height = FResult.cols;
 }
 
 

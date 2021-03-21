@@ -386,7 +386,7 @@ void MainWindow::decodeSanghavi(){
     }
     tt2 = clock() - tt2;
 
-    ui->decodedSignature->setText(QString::fromStdString(gettext));
+    ui->decodedSignature->setText(QString::fromStdString(gettext).toUtf8());
     ui->duration->setText(QString::number(tt2 / CLOCKS_PER_SEC) + " sec");
 
     qDebug() << "jopa";
@@ -1255,7 +1255,7 @@ void MainWindow::on_sanghaviAlgorithm_clicked()
 {
     setCurrentAlgorithm("sanghavi");
     cv::Mat imag = QPixmapToCvMat(this->imagePixels);
-    string text = ui->signature->text().toStdString();
+    string text = ui->signature->text().toUtf8().toStdString();
 
     int channels = imag.channels();
     cv::Mat image;

@@ -118,5 +118,6 @@ private:
     int           author;
 
     cv::Mat mat;
+    cv::Mat FResult;
 };
 #endif // MAINWINDOW_H

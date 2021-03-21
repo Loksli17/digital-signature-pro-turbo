@@ -1117,7 +1117,7 @@ void MainWindow::on_sanghaviAlgorithm_clicked()
     int channels = imag.channels();
     cv::Mat image;
     imag.convertTo(imag, CV_32F, 1.0, 0.0);
-    cv::Mat Matvector[3];
+//    cv::Mat Matvector[3];
     cv::Mat charimage;
     int i, j, k;
 

@@ -422,7 +422,7 @@ void MainWindow::on_authorAlgorithm_clicked()
 
     int channels = imag.channels();
     cv::Mat image;
-    cv::Mat Matvector[3];
+//    cv::Mat Matvector[3];
     imag.convertTo(imag, CV_32F, 1.0, 0.0);
     cv::Mat charimage;
     if (channels == 1) //чёрно-белое изображение
@@ -589,9 +589,11 @@ void MainWindow::on_authorAlgorithm_clicked()
 
         imageProcessedPixels = cvMatToQPixmap(imrs);
         ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
+         imageProcessedPixels = cvMatToQPixmap(FResult);
 
         FResult = imr;
-        imwrite(merged, FResult);
+        imageProcessedPixels = cvMatToQPixmap(FResult);
+//        imwrite(merged, FResult);
     }
     if (channels == 3)
     {
@@ -606,8 +608,10 @@ void MainWindow::on_authorAlgorithm_clicked()
 
         imageProcessedPixels = cvMatToQPixmap(Fresult1);
         ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
+//        qDebug() << "Kek происходит тут";
+        imageProcessedPixels = cvMatToQPixmap(FResult);
 
-        imwrite(merged, Fresult1);
+//        imwrite(merged, Fresult1);
     }
 
 
@@ -924,6 +928,182 @@ void MainWindow::on_kochAlgorithm_clicked()
     setQualityInfo(md, ad, nad, mse, nmse, snr, psnr, If);
 }
 
+void MainWindow::on_soheiliAlgorithm_clicked()
+{
+    cv::Mat imag = QPixmapToCvMat(this->imagePixels);
+    string text = ui->signature->text().toStdString();
+
+    int Q = 10; //шаг квантования
+//    cout << "Введите шаг квантования" << endl;
+//    cin >> Q;
+    int i, j,k;
+    int channels = imag.channels();
+    cv::Mat image;
+    imag.convertTo(imag, CV_32F, 1.0, 0.0);
+//    cv::Mat Matvector[3];
+
+    cv::Mat charimage;
+    if (channels == 1) //чёрно-белое изображение
+    {
+        image = imag;
+        image.convertTo(charimage, CV_8U);
+    }
+    if (channels == 3) //цветное изображение
+    {
+        split(imag, Matvector);
+        image = Matvector[0];//встраивание в синюю компоненту
+        image.convertTo(charimage, CV_8U);
+    }
+    int rows = image.rows;
+    int cols = image.cols;
+    vector<bitset<8>> B1; //битовое сообщение
+    int length = text.length();
+    uchar temp;
+    for (i = 0; i < length; i++)
+    {
+        temp = (uchar)text[i];
+        bitset<8>p((temp));
+        B1.push_back(p);
+    }
+    int CVZsize = ceil(sqrt(length * 8));
+    cv::Mat CVZ(CVZsize, CVZsize, CV_8U); //демонстрация ЦВЗ
+    for (i = 0; i < CVZsize; i++)
+    {
+        for (j = 0; j < CVZsize; j++)
+        {
+            if (i*CVZsize + j < length * 8)
+            {
+                if (B1[(i*CVZsize + j) / 8][(i*CVZsize + j) % 8] == 0)
+                {
+                    CVZ.at<uchar>(i, j) = 0;
+                }
+                if (B1[(i*CVZsize + j) / 8][(i*CVZsize + j) % 8] == 1)
+                {
+                    CVZ.at<uchar>(i, j) = 255;
+                }
+
+            }
+
+        }
+    }
+//    imwrite("CVZ.jpg", CVZ);
+//    namedWindow(" ЦВЗ", WINDOW_AUTOSIZE);
+//    imshow(" ЦВЗ", CVZ);
+//    waitKey(0);
+//    destroyWindow("ЦВЗ");
+
+
+
+    //вейвлет-разложение контейнера
+    clock_t t1 = clock();
+    vector< cv::Mat > L1, L2;
+    L1 = WaveletDec(image);
+    L2 = WaveletDec(L1[0]);
+    cv::Mat LL=L2[0].reshape(1, 1);
+
+    //разбиение на подблоки
+    int wsize = text.length() * 8;
+    int n = 2; //уровень разложения
+    int K = LL.cols / wsize/ (n*n);
+    cv::Mat LL1 = LL;
+    int m; //множитель
+    //встраивание
+    for (k = 0; k < K; k++)
+    {
+        for (i = 0; i < text.length(); i++)
+        {
+
+            for (j = 0; j < 8; j++)
+            {
+                m = LL.at <float>(k*wsize+i*8+j) / Q;
+                if (B1[i][j] == 1)
+                {
+                    if ((LL.at <float>(k*wsize + i * 8 + j) > m*Q) && (LL.at <float>(k*wsize + i * 8 + j) <= (m + 0.5)*Q))
+                    {
+                        LL1.at <float>(k*wsize + i * 8 + j) = m*Q;
+                    }
+
+                    if ((LL.at <float>(k*wsize + i * 8 + j) > (m+0.5)*Q) && (LL.at <float>(k*wsize + i * 8 + j) <= (m +1)*Q))
+                    {
+                        LL1.at <float>(k*wsize + i * 8 + j) = (m+1)*Q;
+                    }
+
+                }
+                if (B1[i][j] == 0)
+                {
+                    LL1.at <float>(k*wsize + i * 8 + j) = (m + 0.5)*Q;
+
+                }
+
+            }
+
+        }
+    }
+    LL1 = LL1.reshape(1, L2[0].rows);
+
+    //вейвлет-восстановление
+    vector <cv::Mat> IL1, IL2;
+    IL2.push_back(LL1);
+    for (int i = 1; i < 4; i++)
+    {
+        IL2.push_back(L2[i]);
+    }
+    cv::Mat temp2 = WaveletRec(IL2, L1[0].rows,L1[0].cols);
+    IL1.push_back(temp2);
+    for (int i = 1; i < 4; i++)
+    {
+        IL1.push_back(L1[i]);
+    }
+    cv::Mat RW = WaveletRec(IL1, image.rows, image.cols);
+    t1 = clock() - t1;
+//    cout << "Время встраивания ЦВЗ: " << (double)t1 / CLOCKS_PER_SEC << " секунд" << endl;
+
+    ui->duration->setText(QString::number(t1));
+
+    cv::Mat RWI;
+    RW.convertTo(RWI, CV_8U);
+    cv::Mat FResult;
+    string merged = first + "Soheili." + second;
+    if (channels == 1) //чёрно-белое
+    {
+//        namedWindow("Wavelet Reconstruction", 1);
+//        imshow("Wavelet Reconstruction", RWI);
+//        waitKey(0);
+        this->imageProcessedPixels = cvMatToQPixmap(RWI);
+        ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
+        FResult = RW;
+
+        imageProcessedPixels = cvMatToQPixmap(FResult);
+//        imwrite(merged, FResult);
+    }
+    if (channels == 3) //цветное
+    {
+        vector<cv::Mat>Vec;
+        Vec.push_back(RW);
+        Vec.push_back(Matvector[1]);
+        Vec.push_back(Matvector[2]);
+        merge(Vec, FResult);
+        cv::Mat Fresult1;
+        FResult.convertTo(Fresult1, CV_8UC3);
+        this->imageProcessedPixels = cvMatToQPixmap(Fresult1);
+        ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
+        imageProcessedPixels = cvMatToQPixmap(FResult);
+//        namedWindow("Wavelet Reconstruction", 1);
+//        imshow("Wavelet Reconstruction", Fresult1);
+//        waitKey(0);
+//        imwrite(merged, Fresult1);
+    }
+    //проверка качества
+    int md = MD(charimage, RWI);
+    double ad = AD(charimage, RWI);
+    double nad = NAD(charimage, RWI);
+    double mse = MSE(charimage, RWI);
+    double nmse = NMSE(charimage, RWI);
+    double snr = SNR(charimage, RWI);
+    double psnr = PSNR(charimage, RWI);
+    double If = IF(charimage, RWI);
+    setQualityInfo(md, ad, nad, mse, nmse, snr, psnr, If);
+}
 
 void MainWindow::on_sanghaviAlgorithm_clicked()
 {
@@ -991,7 +1171,7 @@ void MainWindow::on_sanghaviAlgorithm_clicked()
         }
     }
 
-    imwrite("CVZ.jpg", CVZ);
+//    imwrite("CVZ.jpg", CVZ);
 //    cv::namedWindow(" ЦВЗ", cv::WINDOW_AUTOSIZE);
 //    imshow(" ЦВЗ", CVZ);
 //    cv::waitKey(0);
@@ -1089,8 +1269,8 @@ void MainWindow::on_sanghaviAlgorithm_clicked()
         imageProcessedPixels = cvMatToQPixmap(imrs);
         ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
         FResult = imr;
-        imwrite(merged, FResult);
-
+//        imwrite(merged, FResult);
+        imageProcessedPixels = cvMatToQPixmap(FResult);
     }
 
     if (channels == 3)
@@ -1105,7 +1285,8 @@ void MainWindow::on_sanghaviAlgorithm_clicked()
 
         imageProcessedPixels = cvMatToQPixmap(Fresult1);
         ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
-        imwrite(merged, Fresult1);
+//        imwrite(merged, Fresult1);
+        imageProcessedPixels = cvMatToQPixmap(FResult);
     }
 
 
@@ -1506,6 +1687,7 @@ void MainWindow::on_gaussian_clicked()
 void MainWindow::on_checkost_clicked()
 {
     cv::Mat FResult = Chetkost(QPixmapToCvMat(imageProcessedPixels));
+    qDebug() << "KEK";
     imageProcessedPixels = cvMatToQPixmap(FResult);
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
 }
@@ -1990,6 +2172,5 @@ double MainWindow::IF(cv::Mat cont, cv::Mat stego)//качество изобр�
     double if1 = 1 - (sum1 / sum2);
     return if1;
 }
-
 
 

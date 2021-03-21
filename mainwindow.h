@@ -35,7 +35,7 @@ private slots:
 
     void on_jpegCompression_clicked();
 
-    void on_pushButton_10_clicked();
+//    void on_pushButton_10_clicked();
 
     void on_Dark_clicked();
 
@@ -53,11 +53,13 @@ private slots:
 
     void on_cutRight_clicked();
 
-    void on_pushButton_9_clicked();
+//    void on_pushButton_9_clicked();
 
     void on_decode_clicked();
 
     void on_cutDown_clicked();
+
+    void on_soheiliAlgorithm_clicked();
 
 private:
     Ui::MainWindow *ui;

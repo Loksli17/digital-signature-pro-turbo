@@ -39,6 +39,26 @@ private slots:
 
     void on_Dark_clicked();
 
+    void on_resize_clicked();
+
+    void on_turn_clicked();
+
+    void on_gaussian_clicked();
+
+    void on_checkost_clicked();
+
+    void on_brightness_clicked();
+
+    void on_erode_clicked();
+
+    void on_cutRight_clicked();
+
+    void on_pushButton_9_clicked();
+
+    void on_decode_clicked();
+
+    void on_cutDown_clicked();
+
 private:
     Ui::MainWindow *ui;
 
@@ -72,6 +92,8 @@ private:
     QPixmap imageProcessedPixels;
     string  first;
     string  second;
+    int     width;
+    int     height;
 
     cv::Mat Matvector[3];
 

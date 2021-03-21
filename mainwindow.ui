@@ -66,7 +66,7 @@
      <string>SanghaviAlg</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton">
+   <widget class="QPushButton" name="turn">
     <property name="geometry">
      <rect>
       <x>620</x>
@@ -76,10 +76,10 @@
      </rect>
     </property>
     <property name="text">
-     <string>PushButton</string>
+     <string>Turn</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton_2">
+   <widget class="QPushButton" name="resize">
     <property name="geometry">
      <rect>
       <x>540</x>
@@ -89,10 +89,10 @@
      </rect>
     </property>
     <property name="text">
-     <string>PushButton</string>
+     <string>Resize</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton_3">
+   <widget class="QPushButton" name="gaussian">
     <property name="geometry">
      <rect>
       <x>700</x>
@@ -102,10 +102,10 @@
      </rect>
     </property>
     <property name="text">
-     <string>PushButton</string>
+     <string>Gaussian</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton_4">
+   <widget class="QPushButton" name="checkost">
     <property name="geometry">
      <rect>
       <x>540</x>
@@ -115,7 +115,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>PushButton</string>
+     <string>Contrast</string>
     </property>
    </widget>
    <widget class="QPushButton" name="Dark">
@@ -131,7 +131,7 @@
      <string>Dark</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton_6">
+   <widget class="QPushButton" name="brightness">
     <property name="geometry">
      <rect>
       <x>700</x>
@@ -141,10 +141,10 @@
      </rect>
     </property>
     <property name="text">
-     <string>PushButton</string>
+     <string>Bright</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton_7">
+   <widget class="QPushButton" name="erode">
     <property name="geometry">
      <rect>
       <x>540</x>
@@ -154,10 +154,10 @@
      </rect>
     </property>
     <property name="text">
-     <string>PushButton</string>
+     <string>Erode</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton_8">
+   <widget class="QPushButton" name="cutRight">
     <property name="geometry">
      <rect>
       <x>620</x>
@@ -167,10 +167,10 @@
      </rect>
     </property>
     <property name="text">
-     <string>PushButton</string>
+     <string>cutRight</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton_9">
+   <widget class="QPushButton" name="cutDown">
     <property name="geometry">
      <rect>
       <x>700</x>
@@ -180,7 +180,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>PushButton</string>
+     <string>cutDown</string>
     </property>
    </widget>
    <widget class="QPushButton" name="jpegCompression">
@@ -406,7 +406,7 @@
      <string>TextLabel</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton_10">
+   <widget class="QPushButton" name="decode">
     <property name="geometry">
      <rect>
       <x>540</x>

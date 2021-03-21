@@ -52,6 +52,7 @@ void MainWindow::decode()
     if (currentAlgorithm == "koch") {
         decodeKoch();
     }else if(currentAlgorithm == "author"){
+
         decodeAuthor();
     }else if(currentAlgorithm == "sanghavi"){
         decodeSanghavi();
@@ -292,6 +293,8 @@ void MainWindow::decodeAuthor(){
         gettext.push_back(s);
     }
 
+    qDebug() << "popa: " << QString::fromStdString(gettext);
+
     ui->decodedSignature->setText(QString::fromStdString(gettext));
     ui->duration->setText(QString::number(elapsedTime / CLOCKS_PER_SEC) + " sec");
 }
@@ -390,10 +393,14 @@ void MainWindow::on_loadImage_clicked()
     this->first  = filename.substr(0, pos); // Строка до разделителя.
     this->second = filename.substr(pos + separ.length()); // Строка после разделителя
 
-
     if(this->imagePath != ""){
         this->imagePixels.load(this->imagePath);
-        ui->imageWrap->setPixmap(this->imagePixels);       
+        ui->imageWrap->setPixmap(this->imagePixels);
+
+        cv::Mat image = QPixmapToCvMat(this->imagePixels);
+        this->width  = image.rows;
+        this->height = image.cols;
+
         setWindowTitle(fileName);
         QMessageBox::information(this, "Success", "File: " + fileName + " was opened");
     }else{
@@ -1373,12 +1380,16 @@ cv::Mat CutRight(cv::Mat src, int heigh, int widt)
     return dst;
 }
 
-cv::Mat CutDown(cv::Mat src, int heigh, int widt)
+cv::Mat CutDown(cv::Mat src)
 {
+    int heigh = src.cols;
+    int widt  = src.rows;
+
     src.convertTo(src, CV_32FC3, 1.0, 0.0);
     int i, j;
     int news = heigh*0.8;
     cv::Mat dst;
+
     if (src.channels() == 3)
     {
         cv::Mat dst1(news, widt, CV_32FC3);
@@ -1391,6 +1402,7 @@ cv::Mat CutDown(cv::Mat src, int heigh, int widt)
         }
         dst = dst1;
     }
+
     if (src.channels() == 1)
     {
         cv::Mat dst2(news, widt, CV_32FC1);
@@ -1403,6 +1415,7 @@ cv::Mat CutDown(cv::Mat src, int heigh, int widt)
         }
         dst = dst2;
     }
+
     cv::Mat dst3;
     if (dst.channels() == 1)
     {
@@ -1418,6 +1431,8 @@ cv::Mat CutDown(cv::Mat src, int heigh, int widt)
 //    imshow("Cut", dst3);
 //    cv::waitKey(0);
 //    cv::destroyWindow("Cut");
+
+        qDebug() << "CUTDOWN" << heigh << widt;
     return dst;
 }
 
@@ -1467,7 +1482,64 @@ void MainWindow::on_Dark_clicked()
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
 }
 
-void MainWindow::on_pushButton_10_clicked()
+void MainWindow::on_resize_clicked()
+{
+    cv::Mat FResult = Resize(QPixmapToCvMat(imageProcessedPixels), this->height, this->width);
+    imageProcessedPixels = cvMatToQPixmap(FResult);
+    ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
+}
+
+void MainWindow::on_turn_clicked()
+{
+    cv::Mat FResult = Turn(QPixmapToCvMat(imageProcessedPixels));
+    imageProcessedPixels = cvMatToQPixmap(FResult);
+    ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
+}
+
+void MainWindow::on_gaussian_clicked()
+{
+    cv::Mat FResult = Gaussian(QPixmapToCvMat(imageProcessedPixels));
+    imageProcessedPixels = cvMatToQPixmap(FResult);
+    ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
+}
+
+void MainWindow::on_checkost_clicked()
+{
+    cv::Mat FResult = Chetkost(QPixmapToCvMat(imageProcessedPixels));
+    imageProcessedPixels = cvMatToQPixmap(FResult);
+    ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
+}
+
+void MainWindow::on_brightness_clicked()
+{
+    cv::Mat FResult = brightness(QPixmapToCvMat(imageProcessedPixels));
+    imageProcessedPixels = cvMatToQPixmap(FResult);
+    ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
+}
+
+void MainWindow::on_erode_clicked()
+{
+    cv::Mat FResult = Erode(QPixmapToCvMat(imageProcessedPixels));
+    imageProcessedPixels = cvMatToQPixmap(FResult);
+    ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
+}
+
+void MainWindow::on_cutRight_clicked()
+{
+    cv::Mat FResult = CutRight(QPixmapToCvMat(imageProcessedPixels), this->height, this->width);
+    imageProcessedPixels = cvMatToQPixmap(FResult);
+    ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
+}
+
+void MainWindow::on_cutDown_clicked()
+{
+    cv::Mat FResult = CutDown(QPixmapToCvMat(imageProcessedPixels));
+    imageProcessedPixels = cvMatToQPixmap(FResult);
+    ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
+}
+
+
+void MainWindow::on_decode_clicked()
 {
     decode();
 }
@@ -1918,3 +1990,6 @@ double MainWindow::IF(cv::Mat cont, cv::Mat stego)//качество изобр�
     double if1 = 1 - (sum1 / sum2);
     return if1;
 }
+
+
+

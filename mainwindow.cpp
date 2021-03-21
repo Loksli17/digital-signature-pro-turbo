@@ -1752,7 +1752,7 @@ void MainWindow::on_jpegCompression_clicked()
 void MainWindow::on_Dark_clicked()
 {
     this->FResult = Dark(this->algResult);
-//    cv::Mat FResult = Dark(QtOcv::image2Mat(imageProcessedPixels.toImage(), CV_8UC3));
+    cv::Mat FResult = Dark(QtOcv::image2Mat(imageProcessedPixels.toImage(), CV_8UC3));
     qDebug() << "dark";
     imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(FResult));
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);

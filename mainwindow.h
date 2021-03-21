@@ -126,6 +126,7 @@ private:
     cv::Mat mat;
 
     cv::Mat RW;
+    cv::Mat imr;
 
     cv::Mat FResult;
     cv::Mat algResult;

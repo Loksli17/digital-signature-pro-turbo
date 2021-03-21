@@ -185,7 +185,7 @@ void MainWindow::decodeKoch()
 
 void MainWindow::decodeAuthor(){
 
-    cv::Mat imr     = algResult;
+//    cv::Mat imr     = algResult;
     cv::Mat Fresult = FResult;
     string text = ui->signature->text().toStdString();
     int P = 10;
@@ -306,12 +306,12 @@ void MainWindow::decodeAuthor(){
     qDebug() << "popa: " << QString::fromStdString(gettext);
 
     ui->decodedSignature->setText(QString::fromStdString(gettext));
-    ui->duration->setText(QString::number(elapsedTime / CLOCKS_PER_SEC) + " sec");
+    ui->duration->setText(QString::number(elapsedTime, 'f', 3) + " sec");
 }
 
 void MainWindow::decodeSanghavi(){
 
-    cv::Mat imr     = algResult;
+//    cv::Mat imr     = algResult;
     cv::Mat Fresult = FResult;
     string text     = ui->signature->text().toStdString();
     int P = 10;
@@ -691,13 +691,13 @@ void MainWindow::on_authorAlgorithm_clicked()
 
 
     vector <cv::Mat>LR1;
-    cv::Mat imr;
+//    cv::Mat imr;
     LR1 = L1;
     imr = WaveletRec(LR1, rows, cols);
     QueryPerformanceCounter(&t2);
     elapsedTime = (float)(t2.QuadPart - t1.QuadPart) / frequency.QuadPart;
 
-    ui->duration->setText(QString::number(elapsedTime / CLOCKS_PER_SEC) + " sec");
+    ui->duration->setText(QString::number(elapsedTime, 'f', 3) + " sec");
 
     cv::Mat imrs;
     imr.convertTo(imrs, CV_8U);
@@ -738,9 +738,9 @@ void MainWindow::on_authorAlgorithm_clicked()
 //        imageProcessedPixels = cvMatToQPixmap(Fresult1);
         ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
 //        imageProcessedPixels = cvMatToQPixmap(FResult);
-        imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(FResult));
-        this->algResult = imr;
-        this->FResult   = imr;
+//        imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(FResult));
+        this->algResult = FResult;
+        this->FResult   = FResult;
 
 //        imwrite(merged, Fresult1);
     }
@@ -1387,7 +1387,7 @@ void MainWindow::on_sanghaviAlgorithm_clicked()
 
     //вейвлет-восстановление
     vector <cv::Mat>LR1, LR2, LR3, LR4;
-    cv::Mat imr;
+//    cv::Mat imr;
     LR3 = L3;
     cv::Mat LL2 = WaveletRec(LR3, L2[0].rows, L2[0].cols);
     LR2.push_back(LL2);
@@ -1418,8 +1418,9 @@ void MainWindow::on_sanghaviAlgorithm_clicked()
         ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
         this->width  = imrs.rows;
         this->height = imrs.cols;
-        this->FResult = imr;
-        this->algResult = imr;
+//        this->imr = imr;
+        this->FResult = FResult;
+        this->algResult = FResult;
         qDebug() << "encode rows" << imr.rows;
 //        imwrite(merged, FResult);
 //        imageProcessedPixels = cvMatToQPixmap(FResult);
@@ -1439,9 +1440,9 @@ void MainWindow::on_sanghaviAlgorithm_clicked()
         ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
         this->width  = Fresult1.rows;
         this->height = Fresult1.cols;
-        this->FResult = imr;
-        this->algResult = imr;
-        qDebug() << "encode rows" << imr.rows;
+        this->FResult = FResult;
+        this->algResult = FResult;
+//        qDebug() << "encode rows" << imr.rows;
 
 //        imwrite(merged, Fresult1);
 //        imageProcessedPixels = cvMatToQPixmap(FResult);

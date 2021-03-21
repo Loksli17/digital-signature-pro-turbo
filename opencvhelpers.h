@@ -19,6 +19,7 @@
 // NOTE: This does not cover all cases - it should be easy to add new ones as required.
 inline QImage  cvMatToQImage( const cv::Mat &inMat )
 {
+    qDebug() << "kek: " << inMat.type();
     switch ( inMat.type() )
     {
     // 8-bit, 4 channel
@@ -74,6 +75,11 @@ inline QImage  cvMatToQImage( const cv::Mat &inMat )
 #endif
 
         return image;
+    }
+
+    case CV_32FC3: {
+        qDebug() << "THIS IS IT";
+        break;
     }
 
     default:

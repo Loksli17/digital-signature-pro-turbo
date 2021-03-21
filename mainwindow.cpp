@@ -48,14 +48,14 @@ void MainWindow::setCurrentAlgorithm(QString name)
 
 void MainWindow::decode()
 {
-
     if (currentAlgorithm == "koch") {
         decodeKoch();
     }else if(currentAlgorithm == "author"){
-
         decodeAuthor();
     }else if(currentAlgorithm == "sanghavi"){
         decodeSanghavi();
+    } else if(currentAlgorithm == "soheili") {
+        decodeSoheili();
     }
 }
 
@@ -183,7 +183,6 @@ void MainWindow::decodeKoch()
     ui->duration->setText(QString::number(t2 / CLOCKS_PER_SEC) + " sec");
 }
 
-
 void MainWindow::decodeAuthor(){
 
     cv::Mat imr = QPixmapToCvMat(this->imageProcessedPixels);
@@ -299,7 +298,6 @@ void MainWindow::decodeAuthor(){
     ui->duration->setText(QString::number(elapsedTime / CLOCKS_PER_SEC) + " sec");
 }
 
-
 void MainWindow::decodeSanghavi(){
 
     cv::Mat imr     = this->algResult;
@@ -380,6 +378,98 @@ void MainWindow::decodeSanghavi(){
     ui->duration->setText(QString::number(tt2 / CLOCKS_PER_SEC) + " sec");
 
     qDebug() << "jopa";
+}
+
+void MainWindow::decodeSoheili()
+{
+    int i, j, k;
+    int m;
+    int channels = this->FResult.channels();
+    int rows = this->FResult.rows;
+    int cols = this->FResult.cols;
+
+//    string text
+
+    if (channels == 1)
+    {
+        this->RW = this->FResult;
+    }
+    if (channels == 3)
+    {
+        split(this->FResult, Matvector);
+        Matvector[0].convertTo(this->RW, CV_32FC1, 1.0, 0.0);
+    }
+    //обратный ход
+    clock_t tt2 = clock();
+    vector <cv::Mat> LW1, LW2, LW3;
+    LW1 = WaveletDec(this->RW);
+    LW2 = WaveletDec(LW1[0]);
+    LW2[0] =LW2[0].reshape(1, 1);
+    //извлечение ЦВЗ
+    vector <bitset<8>> B2;
+    for (k = 0; k < this->K; k++)
+    {
+        for (i = 0; i < this->text.length(); i++)
+        {
+            bitset<8> temp;
+            for (j = 0; j < 8; j++)
+            {
+                m = LW2[0].at <float>(k * this->wsize + i * 8 + j) / Q;
+                if ((LW2[0].at <float>(k * this->wsize + i * 8 + j) > (m + 0.75) * Q) || (LW2[0].at <float>(k * this->wsize + i * 8 + j) <= (m + 0.25) * Q))
+                {
+                    temp[j] = 1;
+
+                }
+
+                if ((LW2[0].at <float>(k * this->wsize + i * 8 + j) > (m + 0.25) * Q) && (LW2[0].at <float>(k * this->wsize + i * 8 + j) <= (m + 0.75) * Q))
+                {
+                    temp[j] = 0;
+                }
+            }
+            B2.push_back(temp);
+        }
+    }
+    //анализ результатов
+    vector<int> summ (this->text.length() * 8);
+    for (k = 0; k < K; k++)
+    {
+        for (i = 0; i < this->text.length(); i++)
+        {
+            for (j = 0; j < 8; j++)
+            {
+                summ[i * 8 + j] += B2[k * this->text.length() + i][j];
+            }
+        }
+    }
+
+    string gettext;
+    uchar t;
+    for (i = 0; i < this->text.length(); i++)
+    {
+        bitset<8>temp2;
+        for (j = 0; j < 8; j++)
+        {
+            if (summ[i * 8 + j] >= this->K / 2)
+            {
+                temp2[j] = 1;
+            }
+            else
+            {
+                temp2[j] = 0;
+            }
+
+        }
+        t = temp2.to_ulong();
+        gettext.push_back(t);
+    }
+    tt2 = clock() - tt2;
+
+    qDebug() << QString::fromStdString(gettext);
+
+    ui->duration->setText(QString::number(tt2 / CLOCKS_PER_SEC) + " secs");
+    ui->decodedSignature->setText(QString::fromStdString(gettext));
+//    cout << "Время извлечения ЦВЗ: " << (double)tt2 / CLOCKS_PER_SEC << " секунд" << endl;
+//    cout << gettext << endl;
 }
 
 
@@ -954,17 +1044,17 @@ void MainWindow::on_kochAlgorithm_clicked()
     setQualityInfo(md, ad, nad, mse, nmse, snr, psnr, If);
 }
 
-
 void MainWindow::on_soheiliAlgorithm_clicked()
 {
+    setCurrentAlgorithm("soheili");
 //    cv::Mat imag = QPixmapToCvMat(this->imagePixels);
     cv::Mat imag = QtOcv::image2Mat(imagePixels.toImage(), CV_8UC3, QtOcv::MCO_BGR);
-    string text = ui->signature->text().toStdString();
+    this->text = ui->signature->text().toStdString();
 
-    int Q = 10; //шаг квантования
+    Q = 10; //шаг квантования
 //    cout << "Введите шаг квантования" << endl;
 //    cin >> Q;
-    int i, j,k;
+    int i, j, k;
     int channels = imag.channels();
     cv::Mat image;
     imag.convertTo(imag, CV_32F, 1.0, 0.0);
@@ -1030,9 +1120,9 @@ void MainWindow::on_soheiliAlgorithm_clicked()
     cv::Mat LL=L2[0].reshape(1, 1);
 
     //разбиение на подблоки
-    int wsize = text.length() * 8;
+    wsize = text.length() * 8;
     int n = 2; //уровень разложения
-    int K = LL.cols / wsize/ (n*n);
+    K = LL.cols / wsize/ (n*n);
     cv::Mat LL1 = LL;
     int m; //множитель
     //встраивание
@@ -1082,15 +1172,16 @@ void MainWindow::on_soheiliAlgorithm_clicked()
     {
         IL1.push_back(L1[i]);
     }
-    cv::Mat RW = WaveletRec(IL1, image.rows, image.cols);
+
+    this->RW = WaveletRec(IL1, image.rows, image.cols);
     t1 = clock() - t1;
 //    cout << "Время встраивания ЦВЗ: " << (double)t1 / CLOCKS_PER_SEC << " секунд" << endl;
 
     ui->duration->setText(QString::number(t1 / CLOCKS_PER_SEC) + " sec");
 
     cv::Mat RWI;
-    RW.convertTo(RWI, CV_8U);
-//    cv::Mat FResult;
+    this->RW.convertTo(RWI, CV_8U);
+    cv::Mat FResult;
     string merged = first + "Soheili." + second;
     if (channels == 1) //чёрно-белое
     {
@@ -1100,26 +1191,29 @@ void MainWindow::on_soheiliAlgorithm_clicked()
 //        this->imageProcessedPixels = cvMatToQPixmap(RWI);
 
 
-        this->imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(RWI, QtOcv::MCO_BGR).rgbSwapped());
+        this->imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(RWI, QtOcv::MCO_BGR));
         ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
-        FResult = RW;
+        FResult = this->RW;
 
 //        imageProcessedPixels = cvMatToQPixmap(FResult);
-        this->imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(FResult, QtOcv::MCO_BGR).rgbSwapped());
+//        this->imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(FResult, QtOcv::MCO_BGR).rgbSwapped());
 //        imwrite(merged, FResult);
     }
     if (channels == 3) //цветное
     {
         vector<cv::Mat>Vec;
-        Vec.push_back(RW);
+        Vec.push_back(this->RW);
         Vec.push_back(Matvector[1]);
         Vec.push_back(Matvector[2]);
         merge(Vec, FResult);
         cv::Mat Fresult1;
         FResult.convertTo(Fresult1, CV_8UC3);
+
 //        this->imageProcessedPixels = cvMatToQPixmap(Fresult1);
+
         this->imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(Fresult1, QtOcv::MCO_BGR));
         ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
+
 //        imageProcessedPixels = cvMatToQPixmap(FResult);
 //        this->imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(FResult, QtOcv::MCO_BGR, QImage::Format_RGB888));
 //        namedWindow("Wavelet Reconstruction", 1);
@@ -1127,6 +1221,9 @@ void MainWindow::on_soheiliAlgorithm_clicked()
 //        waitKey(0);
 //        imwrite(merged, Fresult1);
     }
+
+    this->FResult = FResult;
+    this->algResult = FResult;
     //проверка качества
     int md = MD(charimage, RWI);
     double ad = AD(charimage, RWI);
@@ -1721,7 +1818,7 @@ void MainWindow::on_jpegCompression_clicked()
     //    cv::Mat FResult = JPEGComp(QPixmapToCvMat(imageProcessedPixels));
     //    cv::Mat FResult = JPEGComp(QtOcv::image2Mat(imageProcessedPixels.toImage(), CV_8UC3, QtOcv::MCO_RGB));
 
-    this->FResult = JPEGComp(this->FResult);
+    this->FResult = JPEGComp(this->algResult);
 
     qDebug() << "Compressed";
     //    imageProcessedPixels = cvMatToQPixmap(FResult);

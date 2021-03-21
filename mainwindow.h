@@ -106,10 +106,16 @@ private:
     int x2;
     int y2;
 
+    int Q;
+
     double om1;
     double om2;
     double z1;
     double z2;
+
+    string text;
+    int wsize;
+    int K;
 
     LARGE_INTEGER authorFrequency;
     LARGE_INTEGER authorT1;
@@ -118,6 +124,9 @@ private:
     int           author;
 
     cv::Mat mat;
+
+    cv::Mat RW;
+
     cv::Mat FResult;
     cv::Mat algResult;
 };

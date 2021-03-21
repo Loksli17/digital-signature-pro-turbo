@@ -185,10 +185,21 @@ void MainWindow::decodeKoch()
 
 void MainWindow::decodeAuthor(){
 
-    cv::Mat imr = QPixmapToCvMat(this->imageProcessedPixels);
+    cv::Mat imr     = algResult;
+    cv::Mat Fresult = FResult;
     string text = ui->signature->text().toStdString();
     int P = 10;
     int length = text.length();
+
+    if (imr.channels() == 1)
+    {
+        imr = Fresult;
+    }
+    if (imr.channels() == 3)
+    {
+        split(Fresult, Matvector);
+        Matvector[0].convertTo(imr, CV_32FC1, 1.0, 0.0);
+    }
 
     string gettext;
     vector<bitset<8>> B2;
@@ -300,20 +311,21 @@ void MainWindow::decodeAuthor(){
 
 void MainWindow::decodeSanghavi(){
 
-    cv::Mat imr     = this->algResult;
-    cv::Mat Fresult = this->FResult;
-    string text = ui->signature->text().toStdString();
+    cv::Mat imr     = algResult;
+    cv::Mat Fresult = FResult;
+    string text     = ui->signature->text().toStdString();
     int P = 10;
     int length = text.length();
 
+    qDebug() << Fresult.rows;
 
     if (imr.channels() == 1)
     {
-        imr = FResult;
+        imr = Fresult;
     }
     if (imr.channels() == 3)
     {
-        split(FResult, Matvector);
+        split(Fresult, Matvector);
         Matvector[0].convertTo(imr, CV_32FC1, 1.0, 0.0);
     }
 
@@ -704,9 +716,10 @@ void MainWindow::on_authorAlgorithm_clicked()
 //        imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(imrs));
         ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
 
-
         FResult = imr;
         imageProcessedPixels = cvMatToQPixmap(FResult);
+        this->algResult = imr;
+        this->FResult   = imr;
 //        imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(FResult));
 //        imwrite(merged, FResult);
     }
@@ -726,6 +739,8 @@ void MainWindow::on_authorAlgorithm_clicked()
         ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
 //        imageProcessedPixels = cvMatToQPixmap(FResult);
         imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(FResult));
+        this->algResult = imr;
+        this->FResult   = imr;
 
 //        imwrite(merged, Fresult1);
     }
@@ -1258,7 +1273,6 @@ void MainWindow::on_sanghaviAlgorithm_clicked()
 
     if (channels == 3) //цветное изображение
     {
-
         split(imag, Matvector);
         image = Matvector[0];//встраивание в синюю компоненту
         image.convertTo(charimage, CV_8U);
@@ -1404,8 +1418,9 @@ void MainWindow::on_sanghaviAlgorithm_clicked()
         ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
         this->width  = imrs.rows;
         this->height = imrs.cols;
-        FResult = imr;
+        this->FResult = imr;
         this->algResult = imr;
+        qDebug() << "encode rows" << imr.rows;
 //        imwrite(merged, FResult);
 //        imageProcessedPixels = cvMatToQPixmap(FResult);
     }
@@ -1424,7 +1439,9 @@ void MainWindow::on_sanghaviAlgorithm_clicked()
         ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
         this->width  = Fresult1.rows;
         this->height = Fresult1.cols;
+        this->FResult = imr;
         this->algResult = imr;
+        qDebug() << "encode rows" << imr.rows;
 
 //        imwrite(merged, Fresult1);
 //        imageProcessedPixels = cvMatToQPixmap(FResult);
@@ -1831,6 +1848,7 @@ void MainWindow::on_jpegCompression_clicked()
 
 void MainWindow::on_Dark_clicked()
 {
+    this->FResult = Dark(this->algResult);
     cv::Mat FResult = Dark(QtOcv::image2Mat(imageProcessedPixels.toImage(), CV_8UC3));
     qDebug() << "dark";
     imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(FResult));
@@ -1841,6 +1859,7 @@ void MainWindow::on_Dark_clicked()
 
 void MainWindow::on_resize_clicked()
 {
+    this->FResult = Resize(this->algResult, this->height, this->width);
     cv::Mat FResult = Resize(QtOcv::image2Mat(imageProcessedPixels.toImage(), CV_8UC3), this->height, this->width);
     imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(FResult));
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
@@ -1850,6 +1869,7 @@ void MainWindow::on_resize_clicked()
 
 void MainWindow::on_turn_clicked()
 {
+    this->FResult = Turn(this->algResult);
     cv::Mat FResult = Turn(QtOcv::image2Mat(imageProcessedPixels.toImage(), CV_8UC3));
     imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(FResult));
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
@@ -1859,6 +1879,7 @@ void MainWindow::on_turn_clicked()
 
 void MainWindow::on_gaussian_clicked()
 {
+    this->FResult = Gaussian(this->algResult);
     cv::Mat FResult = Gaussian(QtOcv::image2Mat(imageProcessedPixels.toImage(), CV_8UC3));
     imageProcessedPixels = cvMatToQPixmap(FResult);
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
@@ -1868,6 +1889,7 @@ void MainWindow::on_gaussian_clicked()
 
 void MainWindow::on_checkost_clicked()
 {
+    this->FResult = Chetkost(this->algResult);
     cv::Mat FResult = Chetkost(QtOcv::image2Mat(imageProcessedPixels.toImage(), CV_8UC3));
     qDebug() << "KEK";
     imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(FResult));
@@ -1878,6 +1900,7 @@ void MainWindow::on_checkost_clicked()
 
 void MainWindow::on_brightness_clicked()
 {
+    this->FResult = brightness(this->algResult);
     cv::Mat FResult = brightness(QtOcv::image2Mat(imageProcessedPixels.toImage(), CV_8UC3));
     imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(FResult));
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
@@ -1887,6 +1910,7 @@ void MainWindow::on_brightness_clicked()
 
 void MainWindow::on_erode_clicked()
 {
+    this->FResult = Erode(this->algResult);
     cv::Mat FResult = Erode(QtOcv::image2Mat(imageProcessedPixels.toImage(), CV_8UC3));
     imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(FResult));
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
@@ -1896,6 +1920,7 @@ void MainWindow::on_erode_clicked()
 
 void MainWindow::on_cutRight_clicked()
 {
+    this->FResult = CutRight(this->algResult, this->height, this->width);
     cv::Mat FResult = CutRight(QtOcv::image2Mat(imageProcessedPixels.toImage(), CV_8UC3), this->height, this->width);
     imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(FResult));
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
@@ -1905,6 +1930,7 @@ void MainWindow::on_cutRight_clicked()
 
 void MainWindow::on_cutDown_clicked()
 {
+    this->FResult = CutDown(this->algResult, this->height, this->width);
     cv::Mat FResult = CutDown(QtOcv::image2Mat(imageProcessedPixels.toImage(), CV_8UC3), this->height, this->width);
     imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(FResult));
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);

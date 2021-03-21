@@ -416,8 +416,8 @@ void MainWindow::on_authorAlgorithm_clicked()
 {
     setCurrentAlgorithm("author");
 
-//    cv::Mat imag = QPixmapToCvMat(this->imagePixels);
-    cv::Mat imag = QtOcv::image2Mat(imagePixels.toImage(), CV_8UC3);
+    cv::Mat imag = QPixmapToCvMat(this->imagePixels);
+//    cv::Mat imag = QtOcv::image2Mat(imagePixels.toImage(), CV_8UC3);
 
     string text = ui->signature->text().toStdString();
 
@@ -597,14 +597,15 @@ void MainWindow::on_authorAlgorithm_clicked()
     {
         cv::namedWindow("Wavelet Reconstruction", 1);
 
-//        imageProcessedPixels = cvMatToQPixmap(imrs);
+        imageProcessedPixels = cvMatToQPixmap(imrs);
         qDebug() << "Kek происходит тут";
-        imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(imrs));
+//        imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(imrs));
         ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
 
 
         FResult = imr;
-        imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(FResult));
+        imageProcessedPixels = cvMatToQPixmap(FResult);
+//        imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(FResult));
 //        imwrite(merged, FResult);
     }
     if (channels == 3)
@@ -619,8 +620,9 @@ void MainWindow::on_authorAlgorithm_clicked()
 //        cv::namedWindow("Wavelet Reconstruction", 1);
         qDebug() << "Kek происходит тут";
         imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(Fresult1));
+//        imageProcessedPixels = cvMatToQPixmap(Fresult1);
         ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
-
+//        imageProcessedPixels = cvMatToQPixmap(FResult);
         imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(FResult));
 
 //        imwrite(merged, Fresult1);
@@ -943,7 +945,8 @@ void MainWindow::on_kochAlgorithm_clicked()
 
 void MainWindow::on_soheiliAlgorithm_clicked()
 {
-    cv::Mat imag = QPixmapToCvMat(this->imagePixels);
+//    cv::Mat imag = QPixmapToCvMat(this->imagePixels);
+    cv::Mat imag = QtOcv::image2Mat(imagePixels.toImage(), CV_8UC3, QtOcv::MCO_BGR);
     string text = ui->signature->text().toStdString();
 
     int Q = 10; //шаг квантования
@@ -1071,22 +1074,26 @@ void MainWindow::on_soheiliAlgorithm_clicked()
     t1 = clock() - t1;
 //    cout << "Время встраивания ЦВЗ: " << (double)t1 / CLOCKS_PER_SEC << " секунд" << endl;
 
-    ui->duration->setText(QString::number(t1));
+    ui->duration->setText(QString::number(t1 / CLOCKS_PER_SEC) + " sec");
 
     cv::Mat RWI;
     RW.convertTo(RWI, CV_8U);
-    cv::Mat FResult;
+//    cv::Mat FResult;
     string merged = first + "Soheili." + second;
     if (channels == 1) //чёрно-белое
     {
 //        namedWindow("Wavelet Reconstruction", 1);
 //        imshow("Wavelet Reconstruction", RWI);
 //        waitKey(0);
-        this->imageProcessedPixels = cvMatToQPixmap(RWI);
+//        this->imageProcessedPixels = cvMatToQPixmap(RWI);
+
+
+        this->imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(RWI, QtOcv::MCO_BGR).rgbSwapped());
         ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
         FResult = RW;
 
-        imageProcessedPixels = cvMatToQPixmap(FResult);
+//        imageProcessedPixels = cvMatToQPixmap(FResult);
+        this->imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(FResult, QtOcv::MCO_BGR).rgbSwapped());
 //        imwrite(merged, FResult);
     }
     if (channels == 3) //цветное
@@ -1098,9 +1105,11 @@ void MainWindow::on_soheiliAlgorithm_clicked()
         merge(Vec, FResult);
         cv::Mat Fresult1;
         FResult.convertTo(Fresult1, CV_8UC3);
-        this->imageProcessedPixels = cvMatToQPixmap(Fresult1);
+//        this->imageProcessedPixels = cvMatToQPixmap(Fresult1);
+        this->imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(Fresult1, QtOcv::MCO_BGR));
         ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
-        imageProcessedPixels = cvMatToQPixmap(FResult);
+//        imageProcessedPixels = cvMatToQPixmap(FResult);
+//        this->imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(FResult, QtOcv::MCO_BGR, QImage::Format_RGB888));
 //        namedWindow("Wavelet Reconstruction", 1);
 //        imshow("Wavelet Reconstruction", Fresult1);
 //        waitKey(0);
@@ -1695,9 +1704,15 @@ cv::Mat JPEGComp(cv::Mat src)
 
 void MainWindow::on_jpegCompression_clicked()
 {
-    cv::Mat FResult = JPEGComp(QtOcv::image2Mat(imageProcessedPixels.toImage(), CV_8UC3));
-    qDebug() << "aaaaaaaa";
-    imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(FResult));
+    //    cv::Mat FResult = JPEGComp(QPixmapToCvMat(imageProcessedPixels));
+    //    cv::Mat FResult = JPEGComp(QtOcv::image2Mat(imageProcessedPixels.toImage(), CV_8UC3, QtOcv::MCO_RGB));
+
+    this->FResult = JPEGComp(this->FResult);
+
+    qDebug() << "Compressed";
+    //    imageProcessedPixels = cvMatToQPixmap(FResult);
+    imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(FResult, QtOcv::MCO_BGR));
+
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
     this->width  = FResult.rows;
     this->height = FResult.cols;

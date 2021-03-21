@@ -10,6 +10,8 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <windows.h>
 
+#include "cvmatandqimage.h"
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 //using namespace cv;

@@ -66,7 +66,7 @@
      <string>SanghaviAlg</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton">
+   <widget class="QPushButton" name="Turn">
     <property name="geometry">
      <rect>
       <x>620</x>
@@ -76,10 +76,10 @@
      </rect>
     </property>
     <property name="text">
-     <string>PushButton</string>
+     <string>Turn</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton_2">
+   <widget class="QPushButton" name="Resize">
     <property name="geometry">
      <rect>
       <x>540</x>
@@ -89,7 +89,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>PushButton</string>
+     <string>Resize</string>
     </property>
    </widget>
    <widget class="QPushButton" name="pushButton_3">

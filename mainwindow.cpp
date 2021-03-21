@@ -54,7 +54,7 @@ void MainWindow::decode()
     }else if(currentAlgorithm == "author"){
         decodeAuthor();
     }else if(currentAlgorithm == "sanghavi"){
-//        decodeSanghavi();
+        decodeSanghavi();
     }
 }
 
@@ -297,6 +297,77 @@ void MainWindow::decodeAuthor(){
 }
 
 
+void MainWindow::decodeSanghavi(){
+
+    cv::Mat imr = QPixmapToCvMat(this->imageProcessedPixels);
+    string text = ui->signature->text().toStdString();
+    int P = 10;
+    int length = text.length();
+
+    string gettext;
+    vector<bitset<8>> B2;
+    //вейвлет-разложение
+    clock_t tt2 = clock();
+    vector <cv::Mat> LI1, LI2, LI3, LI4;
+    LI1 = WaveletDec(imr);
+    LI2 = WaveletDec(LI1[0]);
+    LI3 = WaveletDec(LI2[0]);
+    int i, j, k;
+    //извлечение ЦВЗ
+    for (i = 0; i < length; i++)
+    {
+        bitset<8>t1;
+        for (j = 0; j < 8; j++)
+        {
+            t1[j] = 0;
+        }
+        B2.push_back(t1);
+    }
+
+    int k1, c;
+    cv::Mat Array = LI3[2].reshape(1, 1);
+    uchar t2;
+    for (i = 0; i < length; i++)
+    {
+        for (j = 0; j < 8; j++)
+        {
+            c = 0;
+            k1 = (i * 8 + j) * 5;
+            if (k1+4 >= Array.cols)
+            {
+                break;
+            }
+            for (k = 1; k < 5; k++)
+            {
+                if (Array.at<float>(k1) > Array.at<float>(k1 + k))
+                {
+                    c++;
+                }
+
+            }
+            if (c > 2)
+            {
+                B2[i][j] = 1;
+            }
+            if (c <= 2)
+            {
+                B2[i][j] = 0;
+            }
+
+        }
+        t2 = B2[i].to_ulong();
+        gettext.push_back(t2);
+
+    }
+    tt2 = clock() - tt2;
+
+    ui->decodedSignature->setText(QString::fromStdString(gettext));
+    ui->duration->setText(QString::number(tt2 / CLOCKS_PER_SEC) + " sec");
+
+    qDebug() << "jopa";
+}
+
+
 //ui->imageWrap->setPixmap(cvMatToQPixmap(mat));
 //QPixmapToCvMat(this->imagePixels);
 
@@ -405,7 +476,7 @@ void MainWindow::on_authorAlgorithm_clicked()
 //    cv::destroyWindow("ЦВЗ");
 
     LARGE_INTEGER frequency;
-    LARGE_INTEGER t1, t2,t3,t4;
+    LARGE_INTEGER t1, t2, t3, t4;
 
     this->authorFrequency = frequency;
     this->authorT1        = t1;
@@ -844,125 +915,8 @@ void MainWindow::on_kochAlgorithm_clicked()
     //    string merged = first + "Koch." + second;
 
     setQualityInfo(md, ad, nad, mse, nmse, snr, psnr, If);
-    //    cv::imwrite(merged, FResult);
-    //    cout << endl;
-    //    cout << "Показатели визуального искажения" << endl;
-    //    cout << "Максимальная разность значений пикселов: " << md << endl;
-    //    cout << "Средняя абсолютная разность значений пикселов: " << ad << endl;
-    //    cout << "Нормированная средняя абсолютная разность: " << nad << endl;
-    //    cout << "Отношение сигнал-шум: " << snr << endl;
-    //    cout << "Максимальное отношение сигнал-шум: " << psnr << endl;
-    //    cout << "Качество изображения: " << If * 100 << "%" << endl;
-    //    FResult = Attack(FResult, heigh, widt);
-    //    heigh = FResult.rows;
-    //    widt = FResult.cols;
-    //    //извлечение ЦВЗ
-    ////    cout << "Извлечение ЦВЗ" << endl;
-    //    clock_t t2 = clock();
-    //    int Nc1 = widt*heigh / (N*N);
-    //    //разбиение на сегменты
-    //    vector<cv::Mat>coofs1;
-    //    int ce = 0;
-    //    int re = 0;
-    //    for (i = 0; i < Nc1; i++)
-    //    {
-    //        cv::Mat C(N, N, CV_8UC1);
-    //        for (j = 0; j < N; j++)
-    //        {
-    //            for (k = 0; k < N; k++)
-    //            {
-    //                if ((ce + j < heigh) && (re + k < widt))
-    //                {
-    //                    C.at<uchar>(j, k) = Matvector[0].at<uchar>(ce + j, re + k);
-    //                }
-
-
-    //            }
-    //        }
-    //        re += N;
-    //        if (re >= widt)
-    //        {
-    //            ce += N;
-    //            re = 0;
-    //        }
-    //        coofs1.push_back(C);
-    //    }
-
-    //    //дискретное косинусное преобразование
-    //    vector<double**> Sigma1;
-    //    for (int b = 0; b < Nc1; b++)
-    //    {
-    //        double** s = new double*[N];
-    //        for (int m = 0; m < N; m++)
-    //        {
-    //            double* si = new double[N];
-    //            s[m] = si;
-
-    //        }
-
-    //        for (int v = 0; v < N; v++)
-    //        {
-    //            for (int v1 = 0; v1 < N; v1++)
-    //            {
-    //                summ = 0;
-    //                for (int i = 0; i < N; i++)
-    //                {
-    //                    for (int j = 0; j < N; j++)
-    //                    {
-    //                        summ += coofs1[b].at<uchar>(i, j)*cos(CV_PI*v * (2 * i + 1) / (2 * N))*cos(CV_PI*v1 * (2 * j + 1) / (2 * N));
-
-    //                    }
-    //                }
-    //                znach = (sigma1(v)*sigma1(v1) / (sqrt(2 * N)))*summ;
-    //                s[v][v1] = znach;
-
-
-
-    //            }
-    //        }
-    //        Sigma1.push_back(s);
-    //    }
-
-    //    int it = 0;
-    //    vector<uchar>finalcodes;
-    //    bitset<8>cod;
-    //    for (k = 0; k < length * 8; k++)
-    //    {
-    //        om1 = fabs(Sigma1[k][x1][y1]);
-    //        om2 = fabs(Sigma1[k][x2][y2]);
-
-    //        if (om1>om2)
-    //        {
-    //            cod[it] = 0;
-    //        }
-
-    //        if (om1 < om2)
-    //        {
-    //            cod[it] = 1;
-    //        }
-    //        if (it < 8)
-    //        {
-    //            it++;
-    //        }
-    //        if (it == 8)
-    //        {
-    //            it = 0;
-    //            finalcodes.push_back(cod.to_ulong());
-    //            bitset<8>cod;
-    //        }
-
-    //    }
-
-    //    string ftext;
-    //    for (i = 0; i < length; i++)
-    //    {
-    //        ftext.push_back(finalcodes[i]);
-    //    }
-    //    t2 = clock() - t2;
-    //    cout << "Время извлечения ЦВЗ: " << (double)t2 / CLOCKS_PER_SEC << " секунд" << endl;
-    //    cout << "Исходное сообщение" << endl;
-    //    cout << ftext << endl;
 }
+
 
 void MainWindow::on_sanghaviAlgorithm_clicked()
 {
@@ -1031,10 +985,10 @@ void MainWindow::on_sanghaviAlgorithm_clicked()
     }
 
     imwrite("CVZ.jpg", CVZ);
-    cv::namedWindow(" ЦВЗ", cv::WINDOW_AUTOSIZE);
-    imshow(" ЦВЗ", CVZ);
-    cv::waitKey(0);
-    cv::destroyWindow("ЦВЗ");
+//    cv::namedWindow(" ЦВЗ", cv::WINDOW_AUTOSIZE);
+//    imshow(" ЦВЗ", CVZ);
+//    cv::waitKey(0);
+//    cv::destroyWindow("ЦВЗ");
 
     //вейвлет-разложение
     clock_t t1 = clock();
@@ -1051,6 +1005,7 @@ void MainWindow::on_sanghaviAlgorithm_clicked()
         int fg;
 //		cin >> fg;
     }
+
     float max, min,temp1;
     for (i = 0; i < length; i++)
     {
@@ -1116,15 +1071,16 @@ void MainWindow::on_sanghaviAlgorithm_clicked()
     t1 = clock() - t1;
 
 //	cout << "Время встраивания ЦВЗ: " << (double)t1 / CLOCKS_PER_SEC << " секунд" << endl;
+    ui->duration->setText(QString::number(t1 / CLOCKS_PER_SEC) + " sec");
     cv::Mat imrs;
     imr.convertTo(imrs, CV_8U);
     cv::Mat FResult;
     string merged = first + "Sanghavi." + second;
+
     if (channels == 1)
     {
-        cv::namedWindow("Wavelet Reconstruction", 1);
-        imshow("Wavelet Reconstruction", imrs);
-        cv::waitKey(0);
+        imageProcessedPixels = cvMatToQPixmap(imrs);
+        ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
         FResult = imr;
         imwrite(merged, FResult);
 
@@ -1139,11 +1095,12 @@ void MainWindow::on_sanghaviAlgorithm_clicked()
         merge(Vec, FResult);
         cv::Mat Fresult1;
         FResult.convertTo(Fresult1, CV_8UC3);
-        cv::namedWindow("Wavelet Reconstruction", 1);
-        imshow("Wavelet Reconstruction", Fresult1);
-        cv::waitKey(0);
+
+        imageProcessedPixels = cvMatToQPixmap(Fresult1);
+        ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
         imwrite(merged, Fresult1);
     }
+
 
     //проверка качества
     int md = MD(charimage, imrs);
@@ -1162,66 +1119,7 @@ void MainWindow::on_sanghaviAlgorithm_clicked()
 //	cout << "Отношение сигнал-шум: " << snr << endl;
 //	cout << "Максимальное отношение сигнал-шум: " << psnr << endl;
 //	cout << "Качество изображения: " << If * 100 << "%" << endl;
-
-
-    //обратный ход
-    string gettext;
-    vector<bitset<8>> B2;
-    //вейвлет-разложение
-    clock_t tt2 = clock();
-    vector <cv::Mat> LI1, LI2, LI3, LI4;
-    LI1 = WaveletDec(imr);
-    LI2 = WaveletDec(LI1[0]);
-    LI3 = WaveletDec(LI2[0]);
-    //извлечение ЦВЗ
-    for (i = 0; i < length; i++)
-    {
-        bitset<8>t1;
-        for (j = 0; j < 8; j++)
-        {
-            t1[j] = 0;
-        }
-        B2.push_back(t1);
-    }
-    int c;
-    cv::Mat Array = LI3[2].reshape(1, 1);
-    uchar t2;
-    for (i = 0; i < length; i++)
-    {
-        for (j = 0; j < 8; j++)
-        {
-            c = 0;
-            k1 = (i * 8 + j) * 5;
-            if (k1+4 >= Array.cols)
-            {
-                break;
-            }
-            for (k = 1; k < 5; k++)
-            {
-                if (Array.at<float>(k1) > Array.at<float>(k1 + k))
-                {
-                    c++;
-                }
-
-            }
-            if (c > 2)
-            {
-                B2[i][j] = 1;
-            }
-            if (c <= 2)
-            {
-                B2[i][j] = 0;
-            }
-
-        }
-        t2 = B2[i].to_ulong();
-        gettext.push_back(t2);
-
-    }
-    tt2 = clock() - tt2;
-//	cout << "Время извлечения ЦВЗ: " << (double)tt2 / CLOCKS_PER_SEC << " секунд" << endl;
-//	cout << gettext<<endl;
-
+    setQualityInfo(md, ad, nad, mse, nmse, snr, psnr, If);
 }
 
 
@@ -1557,6 +1455,14 @@ void MainWindow::on_jpegCompression_clicked()
 {
     cv::Mat FResult = JPEGComp(QPixmapToCvMat(imageProcessedPixels));
     qDebug() << "aaaaaaaa";
+    imageProcessedPixels = cvMatToQPixmap(FResult);
+    ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
+}
+
+void MainWindow::on_Dark_clicked()
+{
+    cv::Mat FResult = Dark(QPixmapToCvMat(imageProcessedPixels));
+    qDebug() << "dark";
     imageProcessedPixels = cvMatToQPixmap(FResult);
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
 }

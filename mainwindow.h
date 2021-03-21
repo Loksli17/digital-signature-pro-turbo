@@ -37,6 +37,8 @@ private slots:
 
     void on_pushButton_10_clicked();
 
+    void on_Dark_clicked();
+
 private:
     Ui::MainWindow *ui;
 

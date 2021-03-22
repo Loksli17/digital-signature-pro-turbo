@@ -63,6 +63,8 @@ private slots:
 
     void on_soheiliAlgorithm_clicked();
 
+    void on_pushButton_clicked();
+
 private:
     Ui::MainWindow *ui;
 

@@ -8,6 +8,7 @@
 #include <QDebug>
 #include <bitset>
 #include <Windows.h>
+#include <QException>
 
 
 #include "opencvhelpers.h"
@@ -1043,6 +1044,8 @@ void MainWindow::on_kochAlgorithm_clicked()
     //    imshow("Изображение с ЦВЗ", FResult);
     //    cv::waitKey(0);
     //    cv::destroyWindow("Изображение с ЦВЗ");
+    this->algResult = FResult;
+    this->FResult   = FResult;
     imageProcessedPixels = cvMatToQPixmap(FResult);
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
 
@@ -2393,3 +2396,17 @@ double MainWindow::IF(cv::Mat cont, cv::Mat stego)//качество изобр�
 }
 
 
+
+void MainWindow::on_pushButton_clicked()
+{
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Save File"), QDir::homePath(), tr("JPG files (*.jpg)"));
+
+    try {
+        imwrite(fileName.toStdString(), this->algResult);
+        QMessageBox::information(this, "Success", "File " + fileName + " was created");
+    } catch(const cv::Exception& ex){
+        QMessageBox::information(this, "Warning", "Error with saving");
+        qDebug() << "Exception converting image to PNG format: %s\n" << ex.what();
+    }
+
+}

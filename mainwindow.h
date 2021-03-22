@@ -65,6 +65,8 @@ private slots:
 
     void on_pushButton_clicked();
 
+    void on_spinBox_valueChanged(int arg1);
+
 private:
     Ui::MainWindow *ui;
 
@@ -108,7 +110,7 @@ private:
     int x2;
     int y2;
 
-    int Q;
+    int Q = 10;
 
     double om1;
     double om2;
@@ -132,5 +134,7 @@ private:
 
     cv::Mat FResult;
     cv::Mat algResult;
+
+    double P = 10;
 };
 #endif // MAINWINDOW_H

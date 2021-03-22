@@ -78,7 +78,6 @@ void MainWindow::decodeKoch()
     int heigh = FResult.rows;
     int widt = FResult.cols;
     //извлечение ЦВЗ
-//    cout << "Извлечение ЦВЗ" << endl;
     clock_t t2 = clock();
     int Nc1 = widt*heigh / (N * N);
     //разбиение на сегменты
@@ -186,10 +185,9 @@ void MainWindow::decodeKoch()
 
 void MainWindow::decodeAuthor(){
 
-//    cv::Mat imr     = algResult;
     cv::Mat Fresult = FResult;
     string text = ui->signature->text().toStdString();
-    int P = 10;
+
     int length = text.length();
 
     if (imr.channels() == 1)
@@ -204,8 +202,8 @@ void MainWindow::decodeAuthor(){
 
     string gettext;
     vector<bitset<8>> B2;
+
     //вейвлет-разложение
-    /*clock_t t2 = clock();*/
     QueryPerformanceFrequency(&this->authorFrequency);
     QueryPerformanceCounter(&this->authorT1);
     vector <cv::Mat> LI1;
@@ -293,10 +291,10 @@ void MainWindow::decodeAuthor(){
             }
         }
     }
-    /*t2 = clock() - t2;*/
+
     QueryPerformanceCounter(&this->authorT2);
     double elapsedTime = (float)(this->authorT2.QuadPart - this->authorT1.QuadPart) / this->authorFrequency.QuadPart;
-//	cout << "Время извлечения ЦВЗ: " << elapsedTime << " секунд" << endl;
+
     uchar s;
     for (int i = 0; i < text.size(); i++)
     {
@@ -315,7 +313,7 @@ void MainWindow::decodeSanghavi(){
 //    cv::Mat imr     = algResult;
     cv::Mat Fresult = FResult;
     string text     = ui->signature->text().toStdString();
-    int P = 10;
+
     int length = text.length();
 
     qDebug() << Fresult.rows;
@@ -398,10 +396,6 @@ void MainWindow::decodeSoheili()
     int i, j, k;
     int m;
     int channels = this->FResult.channels();
-    int rows = this->FResult.rows;
-    int cols = this->FResult.cols;
-
-//    string text
 
     if (channels == 1)
     {
@@ -412,6 +406,7 @@ void MainWindow::decodeSoheili()
         split(this->FResult, Matvector);
         Matvector[0].convertTo(this->RW, CV_32FC1, 1.0, 0.0);
     }
+
     //обратный ход
     clock_t tt2 = clock();
     vector <cv::Mat> LW1, LW2, LW3;
@@ -442,6 +437,7 @@ void MainWindow::decodeSoheili()
             B2.push_back(temp);
         }
     }
+
     //анализ результатов
     vector<int> summ (this->text.length() * 8);
     for (k = 0; k < K; k++)
@@ -481,8 +477,6 @@ void MainWindow::decodeSoheili()
 
     ui->duration->setText(QString::number(tt2 / CLOCKS_PER_SEC) + " secs");
     ui->decodedSignature->setText(QString::fromStdString(gettext));
-//    cout << "Время извлечения ЦВЗ: " << (double)tt2 / CLOCKS_PER_SEC << " секунд" << endl;
-//    cout << gettext << endl;
 }
 
 
@@ -512,15 +506,13 @@ void MainWindow::on_loadImage_clicked()
         this->imagePixels.load(this->imagePath);
         ui->imageWrap->setPixmap(this->imagePixels);
 
-//        cv::Mat image = QPixmapToCvMat(this->imagePixels);
         cv::Mat image = QtOcv::image2Mat(imagePixels.toImage());
         this->width  = image.rows;
         this->height = image.cols;
 
-        qDebug() << this->width << this->height;
-
         setWindowTitle(fileName);
         QMessageBox::information(this, "Success", "File: " + fileName + " was opened");
+        statusBar()->showMessage(tr("File was opened"), 4000);
     }else{
         QMessageBox::warning(this, "Error", "File wasn't opened");
         return;
@@ -530,19 +522,13 @@ void MainWindow::on_loadImage_clicked()
 void MainWindow::on_authorAlgorithm_clicked()
 {
     setCurrentAlgorithm("author");
-
     cv::Mat imag = QPixmapToCvMat(this->imagePixels);
-//    cv::Mat imag = QtOcv::image2Mat(imagePixels.toImage(), CV_8UC3);
-
     string text = ui->signature->text().toStdString();
 
-    double P = 10; //шаг квантования
-//	cout << "Введите порог разности" << endl;/
-//	cin >> P;
+//    double P = 10; //шаг квантования
 
     int channels = imag.channels();
     cv::Mat image;
-//    cv::Mat Matvector[3];
     imag.convertTo(imag, CV_32F, 1.0, 0.0);
 
     cv::Mat charimage;
@@ -597,12 +583,6 @@ void MainWindow::on_authorAlgorithm_clicked()
         }
     }
 
-//    imwrite("CVZ.jpg", CVZ);
-//    cv::namedWindow(" ЦВЗ", cv::WINDOW_AUTOSIZE);
-//    imshow(" ЦВЗ", CVZ);
-//    cv::waitKey(0);
-//    cv::destroyWindow("ЦВЗ");
-
     LARGE_INTEGER frequency;
     LARGE_INTEGER t1, t2, t3, t4;
 
@@ -620,9 +600,7 @@ void MainWindow::on_authorAlgorithm_clicked()
 
     if (8 * text.size() > N1 * N2)
     {
-//		cout << "Изображение слишком мало для встраивания" << endl;
         int fg;
-//		cin >> fg;
     }
 
     int x1 = 2;
@@ -692,7 +670,7 @@ void MainWindow::on_authorAlgorithm_clicked()
 
 
     vector <cv::Mat>LR1;
-//    cv::Mat imr;
+
     LR1 = L1;
     imr = WaveletRec(LR1, rows, cols);
     QueryPerformanceCounter(&t2);
@@ -705,24 +683,18 @@ void MainWindow::on_authorAlgorithm_clicked()
     cv::Mat FResult(rows, cols, CV_32FC3);
     string merged = this->first + "Proposed." + this->second;
 
-    qDebug() << channels;
-    qDebug() << "ты чо бля";
-
     if (channels == 1)
     {
         cv::namedWindow("Wavelet Reconstruction", 1);
 
         imageProcessedPixels = cvMatToQPixmap(imrs);
         qDebug() << "Kek происходит тут";
-//        imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(imrs));
         ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
 
         FResult = imr;
         imageProcessedPixels = cvMatToQPixmap(FResult);
         this->algResult = imr;
         this->FResult   = imr;
-//        imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(FResult));
-//        imwrite(merged, FResult);
     }
     if (channels == 3)
     {
@@ -733,17 +705,12 @@ void MainWindow::on_authorAlgorithm_clicked()
         merge(Vec, FResult);
         cv::Mat Fresult1;
         FResult.convertTo(Fresult1, CV_8UC3);
-//        cv::namedWindow("Wavelet Reconstruction", 1);
+
         qDebug() << "Kek происходит тут";
         imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(Fresult1));
-//        imageProcessedPixels = cvMatToQPixmap(Fresult1);
         ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
-//        imageProcessedPixels = cvMatToQPixmap(FResult);
-//        imageProcessedPixels = QPixmap::fromImage(QtOcv::mat2Image(FResult));
         this->algResult = FResult;
         this->FResult   = FResult;
-
-//        imwrite(merged, Fresult1);
     }
 
 
@@ -758,13 +725,14 @@ void MainWindow::on_authorAlgorithm_clicked()
     double If = IF(charimage, imrs);
 
     setQualityInfo(md, ad, nad, mse, nmse, snr, psnr, If);
+    statusBar()->showMessage(tr("Author algorithm has done his work"), 4000);
 }
 
 void MainWindow::on_kochAlgorithm_clicked()
 {
     setCurrentAlgorithm("koch");
 
-    double P = 10; //шаг квантования
+//    double P = 10; //шаг квантования
     string text = ui->signature->text().toStdString();
     cv::Mat imag = QPixmapToCvMat(this->imagePixels);
 
@@ -794,10 +762,7 @@ void MainWindow::on_kochAlgorithm_clicked()
     int N = 8;//размер блока
     int Nc = contsize / (N * N);
     if (8 * text.size() > Nc){
-        //        cout << "Изображение слишком мало для встраивания" << endl;
         int fg;
-        //        cin >> fg;
-
     }
     vector<bitset<8>> M;
     uchar temp;
@@ -878,10 +843,7 @@ void MainWindow::on_kochAlgorithm_clicked()
     //встраивание
     vector<double**> sigmaM;
     sigmaM = sigma;
-//    double om1;
-//    double om2;
-//    double z1;
-//    double z2;
+
     for (j = 0; j < length; j++)
     {
 
@@ -1039,11 +1001,7 @@ void MainWindow::on_kochAlgorithm_clicked()
     t1 = clock() - t1;
 
     ui->duration->setText(QString::number(t1 / CLOCKS_PER_SEC) + " sec");
-    //    cout << "Время встраивания ЦВЗ: " << (double)t1 / CLOCKS_PER_SEC << " секунд" << endl;
-    //    namedWindow("Изображение с ЦВЗ", cv::WINDOW_AUTOSIZE);
-    //    imshow("Изображение с ЦВЗ", FResult);
-    //    cv::waitKey(0);
-    //    cv::destroyWindow("Изображение с ЦВЗ");
+
     this->algResult = FResult;
     this->FResult   = FResult;
     imageProcessedPixels = cvMatToQPixmap(FResult);
@@ -1057,21 +1015,19 @@ void MainWindow::on_kochAlgorithm_clicked()
     double snr = SNR(start, Matvector[0]);
     double psnr = PSNR(start, Matvector[0]);
     double If = IF(start, Matvector[0]);
-    //    string merged = first + "Koch." + second;
 
     setQualityInfo(md, ad, nad, mse, nmse, snr, psnr, If);
+    statusBar()->showMessage(tr("Koch algorithm has done his work"), 4000);
 }
 
 void MainWindow::on_soheiliAlgorithm_clicked()
 {
     setCurrentAlgorithm("soheili");
-//    cv::Mat imag = QPixmapToCvMat(this->imagePixels);
     cv::Mat imag = QtOcv::image2Mat(imagePixels.toImage(), CV_8UC3, QtOcv::MCO_BGR);
     this->text = ui->signature->text().toStdString();
 
-    Q = 10; //шаг квантования
-//    cout << "Введите шаг квантования" << endl;
-//    cin >> Q;
+//    Q = 10; //шаг квантования
+
     int i, j, k;
     int channels = imag.channels();
     cv::Mat image;
@@ -1122,13 +1078,6 @@ void MainWindow::on_soheiliAlgorithm_clicked()
 
         }
     }
-//    imwrite("CVZ.jpg", CVZ);
-//    namedWindow(" ЦВЗ", WINDOW_AUTOSIZE);
-//    imshow(" ЦВЗ", CVZ);
-//    waitKey(0);
-//    destroyWindow("ЦВЗ");
-
-
 
     //вейвлет-разложение контейнера
     clock_t t1 = clock();
@@ -1252,6 +1201,7 @@ void MainWindow::on_soheiliAlgorithm_clicked()
     double psnr = PSNR(charimage, RWI);
     double If = IF(charimage, RWI);
     setQualityInfo(md, ad, nad, mse, nmse, snr, psnr, If);
+    statusBar()->showMessage(tr("Soheili algorithm has done his work"), 4000);
 }
 
 void MainWindow::on_sanghaviAlgorithm_clicked()
@@ -1338,9 +1288,7 @@ void MainWindow::on_sanghaviAlgorithm_clicked()
 
     if (text.size() * 40 >= array.cols)
     {
-//		cout << "Изображение мало для встраивания" << endl;
         int fg;
-//		cin >> fg;
     }
 
     float max, min,temp1;
@@ -1461,15 +1409,8 @@ void MainWindow::on_sanghaviAlgorithm_clicked()
     double snr = SNR(charimage, imrs);
     double psnr = PSNR(charimage, imrs);
     double If = IF(charimage, imrs);
-//	cout << endl;
-//	cout << "Показатели визуального искажения" << endl;
-//	cout << "Максимальная разность значений пикселов: " << md << endl;
-//	cout << "Средняя абсолютная разность значений пикселов: " << ad << endl;
-//	cout << "Нормированная средняя абсолютная разность: " << nad << endl;
-//	cout << "Отношение сигнал-шум: " << snr << endl;
-//	cout << "Максимальное отношение сигнал-шум: " << psnr << endl;
-//	cout << "Качество изображения: " << If * 100 << "%" << endl;
     setQualityInfo(md, ad, nad, mse, nmse, snr, psnr, If);
+    statusBar()->showMessage(tr("Sanghavi algorithm has done his work"), 4000);
 }
 
 
@@ -1848,6 +1789,7 @@ void MainWindow::on_jpegCompression_clicked()
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
     this->width  = FResult.rows;
     this->height = FResult.cols;
+    statusBar()->showMessage(tr("Jpeg compression attack has done work"), 4000);
 }
 
 void MainWindow::on_Dark_clicked()
@@ -1859,6 +1801,7 @@ void MainWindow::on_Dark_clicked()
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
     this->width  = FResult.rows;
     this->height = FResult.cols;
+    statusBar()->showMessage(tr("Dark attack has done work"), 4000);
 }
 
 void MainWindow::on_resize_clicked()
@@ -1869,6 +1812,7 @@ void MainWindow::on_resize_clicked()
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
     this->width  = FResult.rows;
     this->height = FResult.cols;
+    statusBar()->showMessage(tr("Resize attack has done work"), 4000);
 }
 
 void MainWindow::on_turn_clicked()
@@ -1889,6 +1833,7 @@ void MainWindow::on_gaussian_clicked()
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
     this->width  = FResult.rows;
     this->height = FResult.cols;
+    statusBar()->showMessage(tr("Gaussian attack has done work"), 4000);
 }
 
 void MainWindow::on_checkost_clicked()
@@ -1900,6 +1845,7 @@ void MainWindow::on_checkost_clicked()
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
     this->width  = FResult.rows;
     this->height = FResult.cols;
+    statusBar()->showMessage(tr("Contrast attack has done work"), 4000);
 }
 
 void MainWindow::on_brightness_clicked()
@@ -1910,6 +1856,7 @@ void MainWindow::on_brightness_clicked()
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
     this->width  = FResult.rows;
     this->height = FResult.cols;
+    statusBar()->showMessage(tr("Brightness attack has done work"), 4000);
 }
 
 void MainWindow::on_erode_clicked()
@@ -1920,6 +1867,7 @@ void MainWindow::on_erode_clicked()
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
     this->width  = FResult.rows;
     this->height = FResult.cols;
+    statusBar()->showMessage(tr("Erode attack has done work"), 4000);
 }
 
 void MainWindow::on_cutRight_clicked()
@@ -1930,6 +1878,7 @@ void MainWindow::on_cutRight_clicked()
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
     this->width  = FResult.rows;
     this->height = FResult.cols;
+    statusBar()->showMessage(tr("Cut attack has done work"), 4000);
 }
 
 void MainWindow::on_cutDown_clicked()
@@ -1940,12 +1889,14 @@ void MainWindow::on_cutDown_clicked()
     ui->ImageProcessedWrap->setPixmap(imageProcessedPixels);
     this->width  = FResult.rows;
     this->height = FResult.cols;
+    statusBar()->showMessage(tr("Erode attack has done work"), 4000);
 }
 
 
 void MainWindow::on_decode_clicked()
 {
     decode();
+    statusBar()->showMessage(tr("Image has been decoded"), 4000);
 }
 
 // ====ADDITIONAL FUNCTIONS=======
@@ -2404,9 +2355,16 @@ void MainWindow::on_pushButton_clicked()
     try {
         imwrite(fileName.toStdString(), this->algResult);
         QMessageBox::information(this, "Success", "File " + fileName + " was created");
+        statusBar()->showMessage(tr("Image has been downloaded"), 4000);
     } catch(const cv::Exception& ex){
         QMessageBox::information(this, "Warning", "Error with saving");
         qDebug() << "Exception converting image to PNG format: %s\n" << ex.what();
     }
 
+}
+
+void MainWindow::on_spinBox_valueChanged(int arg1)
+{
+    this->P = arg1;
+    this->Q = arg1;
 }

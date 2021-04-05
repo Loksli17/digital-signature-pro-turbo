@@ -27,13 +27,13 @@ public:
     ~MainWindow();
 
 private slots:
-    void on_loadImage_clicked();
+//    void on_loadImage_clicked();
 
-    void on_authorAlgorithm_clicked();
+//    void on_authorAlgorithm_clicked();
 
-    void on_sanghaviAlgorithm_clicked();
+//    void on_sanghaviAlgorithm_clicked();
 
-    void on_kochAlgorithm_clicked();
+//    void on_kochAlgorithm_clicked();
 
     void on_jpegCompression_clicked();
 
@@ -61,11 +61,23 @@ private slots:
 
     void on_cutDown_clicked();
 
-    void on_soheiliAlgorithm_clicked();
+//    void on_soheiliAlgorithm_clicked();
 
-    void on_pushButton_clicked();
+//    void on_pushButton_clicked();
 
     void on_spinBox_valueChanged(int arg1);
+
+    void on_actionLoad_image_triggered();
+
+    void on_actionDownload_encoded_image_triggered();
+
+    void on_actionAuthor_triggered();
+
+    void on_actionKoch_triggered();
+
+    void on_actionSoheili_triggered();
+
+    void on_actionSanghavi_triggered();
 
 private:
     Ui::MainWindow *ui;
